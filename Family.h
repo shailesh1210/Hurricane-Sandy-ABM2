@@ -50,7 +50,7 @@ protected:
 
 	//method to predict whether agent left home or not due to damage caused by Hurricane Sandy
 	int predictEvacuation(Agent a);
-	int predictPTSDstatus(FileHandling *file, int leftHome, double &PTSDx);
+	int predictPTSDstatus(FileHandling *file, int leftHome, double &PTSDx, int &incDecline);
 	
 
 	double uniformRealDist();
