@@ -10,7 +10,7 @@
 #include <QTimer>
 #include "qcustomplot.h"
 
-#include "ui_skeleton.h"
+//#include "ui_skeleton.h"
 #include "Parameters.h"
 
 class Agent;
@@ -27,8 +27,8 @@ public:
 	Skeleton(QWidget *parent = 0);
 	virtual ~Skeleton();
 
-private:
-	Ui::SkeletonClass ui;
+//private:
+//	Ui::SkeletonClass ui;
 
 private slots:
 	void initialize();
@@ -44,8 +44,9 @@ private:
 	QGroupBox *createFirstGroupBox();
 	QGroupBox *createSecondGroupBox();
 	QGroupBox *createThirdGroupBox();
-	QGroupBox *createSubGroupBox(QGroupBox *grpBox, QComboBox *combo1, QComboBox *combo2, const QString boxTitle, const QString c1Label, QStringList c1Items , const QString c2Label, QStringList c2Items);
-	
+	QGroupBox *createFourthGroupBox();
+	QGroupBox *createTrtmentSubGroupBox(QGroupBox *grpBox, QComboBox *combo1, QComboBox *combo2, const QString boxTitle, const QString c1Label, QStringList c1Items , const QString c2Label, QStringList c2Items);
+	QGroupBox *createResourcesSubGroupBox(QGroupBox *grpBox, QLineEdit *mealServed, const QString boxTitle);
 	//group box for input parameter
 	
 	QGroupBox *inputParamGrpBox;
@@ -85,6 +86,26 @@ private:
 	//QDialog *demoStatsDialog;
 	//QTextEdit *statsViewer;
 
+	//group box for environment variables
+	QGroupBox *resourcesGrpBox;
+	QLineEdit *mealPerDay;
+	QLineEdit *durMealDist;
+
+	QGroupBox *bronxGrpBox;
+	QLineEdit *bronxMealServed;
+
+	QGroupBox *brookGrpBox;
+	QLineEdit *brookMealServed;
+
+	QGroupBox *manhGrpBox;
+	QLineEdit *manhMealServed;
+
+	QGroupBox *queensGrpBox;
+	QLineEdit *queensMealServed;
+
+	QGroupBox *statenGrpBox;
+	QLineEdit *statenMealServed;
+
 	QCustomPlot *customPlot;
 	QTimer dataTimer;
 
@@ -122,6 +143,21 @@ protected:
 	int _raceCat;
 	int _incCat;
 	int _subIncCat;
+
+	int _mealInventoryBronx;
+	int _numPplServedBronx;
+
+	int _mealInventoryBrook;
+	int _numPplServedBrook;
+
+	int _mealInventoryManh;
+	int _numPplServedManh;
+
+	int _mealInventoryQueens;
+	int _numPplServedQueens;
+
+	int _mealInventoryStaten;
+	int _numPplServedStaten;
 
 	bool _steppedCare;
 	int _costCBTtrtment;
