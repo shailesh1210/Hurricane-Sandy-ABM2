@@ -82,8 +82,8 @@
 #define LEFT_HOME_NO 0
 
 //financial loss parameters
-#define INCOME_LOSS_YES 2
-#define INCOME_LOSS_NO 1
+#define FINANCIAL_LOSS 1
+#define NO_FINANCIAL_LOSS 0
 
 #define FINANCIAL_LOSS_TYPE1 1 //financial loss in the range of 0-10K
 #define FINANCIAL_LOSS_TYPE2 2 //financial loss in the range of 10-25K
@@ -198,10 +198,8 @@ typedef boost::unordered_multimap<int, Agent> AgentMap;
 //typedef std::list <Agent> AgentList;
 //typedef std::list <Family> FamilyList;
 
-//typedef boost::container::list <Agent> AgentList;
-typedef boost::container::vector <Agent> AgentList;
-//typedef boost::container::list <Family> FamilyList;
-typedef boost::container::vector <Family> FamilyList;
+typedef boost::container::list <Agent> AgentList;
+typedef boost::container::list <Family> FamilyList;
 
 //typedef std::vector<Agent> AgentVector;
 

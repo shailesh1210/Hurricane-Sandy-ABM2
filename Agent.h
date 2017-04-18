@@ -49,7 +49,6 @@ public:
 	//void setFinancialLoss(int financialLoss);
 	void setFinancialLossType(int financialLossType);
 	void setFinancialLossAmnt(int financialLossAmnt);
-	void setIncomeDecline(int incDecline);
 	void setLeftHome(int leftHouse);
 	void setPTSDstatus(int statusPTSD);
 	void setPTSDsymptom(double inPTSDx);
@@ -90,7 +89,6 @@ protected:
 	//int lossFinancial; //indicator of Financial loss due to property damage
 	int lossFinancialType; //indicatior of type of financial loss
 	int lossFinancialAmnt; //indicator of amount of money lost due to damage to the home
-	int incDecline; //indictor of whether agent suffered financial loss or not
 	int leftHome; //indicates whether agent left home or not due to damage caused by Sandy. 0-Didnot leave home 1 - left home
 	int PTSDstatus; //indicates whether agent has positive PTSD case status or not based on whether it left home
 	double PTSDx; //number of PTSD symptom count

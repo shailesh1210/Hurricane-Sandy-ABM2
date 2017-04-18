@@ -123,7 +123,6 @@ void Family::predictSandyDamage(FileHandling *file)
 	for(auto agent = _agentFamList.begin(); agent != _agentFamList.end(); ++agent)
 	{
 		double PTSDx = 0;
-		int incDecline = 0;
 
 		agent->setDamage(houseDamage);
 		agent->setElectricLoss(electricLoss);
@@ -136,9 +135,8 @@ void Family::predictSandyDamage(FileHandling *file)
 		agent->setAvgHHSaving(avgIncomeSaved);
 
 		agent->setLeftHome(predictEvacuation(*agent));
-		agent->setPTSDstatus(predictPTSDstatus(file, agent->getLeftHome(), PTSDx, incDecline));
+		agent->setPTSDstatus(predictPTSDstatus(file, agent->getLeftHome(), PTSDx));
 		agent->setPTSDsymptom(PTSDx);
-		agent->setIncomeDecline(incDecline);
 	}
 }
 
@@ -258,14 +256,14 @@ int Family::predictEvacuation(Agent a)
 	return leftHome;
 }
 
-int Family::predictPTSDstatus(FileHandling *file, int leftHome, double &PTSDx, int &incDecline)
+int Family::predictPTSDstatus(FileHandling *file, int leftHome, double &PTSDx)
 {
 	int PTSDstatus = -1;
 	//int incomeLoss = (financialLossType == FINANCIAL_LOSS_TYPE1 || financialLossType == FINANCIAL_LOSS_TYPE2 || financialLossType == FINANCIAL_LOSS_TYPE3) ? 1 : 0;
 	float incomeLoss = avgIncomeSaved - (float)financialLossAmnt;
 	float propIncomeLoss = (incomeLoss > 0) ? (float)financialLossAmnt/avgIncomeSaved : 0;
 
-	incDecline = ((incomeLoss < 0 && financialLossAmnt != 0) || (incomeLoss > 0 && propIncomeLoss > 0.5)) ? 2 : 1;
+	int incDecline = ((incomeLoss < 0 && financialLossAmnt != 0) || (incomeLoss > 0 && propIncomeLoss > 0.5)) ? 2 : 1;
 	
 	/*double randomP = uniformRealDist();
 	for(unsigned int i = 0; i < file->_newYorkSandyPTSD.size(); i++)
