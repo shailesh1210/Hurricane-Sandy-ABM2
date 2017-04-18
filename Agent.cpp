@@ -12,7 +12,7 @@
 
 Agent::Agent(FileHandling *file): _file(file), ID(0), key(0), ageCat(0), age(0), race(0), gender(-1), income(0), borough(0), yrsEmployed(0), subInc(0), 
 	indIncome(0), avgHHIncome(0), avgHHSaving(0), hhSize(0), damage(0), lossElectric(NO_ELECTRIC_LOSS), lossHeat(NO_HEAT_LOSS), lossWater(NO_WATER_LOSS), /*lossFinancial(NO_FINANCIAL_LOSS),*/ 
-	lossFinancialType(0), lossFinancialAmnt(0), leftHome(-1), PTSDstatus(-1), PTSDx(0) 
+	lossFinancialType(0), lossFinancialAmnt(0), incDecline(0), leftHome(-1), PTSDstatus(-1), PTSDx(0) 
 {
 
 }
@@ -151,7 +151,6 @@ void Agent::houseSubIncomeDist()
 
 void Agent::decayPTSDsymptom()
 {
-	
 	PTSDx = PTSDx - 0.015*uniformRealDist()*PTSDx;
 	
 }
@@ -363,6 +362,11 @@ void Agent::setFinancialLossType(int financialLossType)
 void Agent::setFinancialLossAmnt(int financialLossAmnt)
 {
 	this->lossFinancialAmnt = financialLossAmnt;
+}
+
+void Agent::setIncomeDecline(int incDecline)
+{
+	this->incDecline = incDecline;
 }
 
 void Agent::setLeftHome(int leftHouse)
