@@ -6,7 +6,7 @@
 
 #include <fstream>
 #include <ctime>
-
+#include <boost\range\algorithm.hpp>
 #include <QVBoxLayout>
 //#include <QInputDialog>
 #include <QMessageBox>
@@ -19,10 +19,23 @@
 Skeleton::Skeleton(QWidget *parent)
 	: QWidget(parent)
 {
-	QGridLayout *grid = new QGridLayout(this);
+	/*QGridLayout *grid = new QGridLayout(this);
 	grid->addWidget(createFirstGroupBox(), 0, 0);
 	grid->addWidget(createSecondGroupBox(), 1, 0);
 	grid->addWidget(createThirdGroupBox(), 2, 0);
+	grid->addWidget(createFourthGroupBox(), 0, 1);*/
+
+	QVBoxLayout *vboxLeft = new QVBoxLayout;
+	vboxLeft->addWidget(createFirstGroupBox());
+	vboxLeft->addWidget(createSecondGroupBox());
+
+	QVBoxLayout *vboxRight = new QVBoxLayout;
+	vboxRight->addWidget(createFourthGroupBox());
+	vboxRight->addWidget(createThirdGroupBox());
+
+	QHBoxLayout *mainLayout = new QHBoxLayout(this);
+	mainLayout->addLayout(vboxLeft);
+	mainLayout->addLayout(vboxRight);
 
 	////ui.setupUi(this);
 
@@ -32,6 +45,7 @@ Skeleton::Skeleton(QWidget *parent)
 	connect(_showStats, SIGNAL(clicked()), this, SLOT(stats()));
 	connect(steppedCareCB, SIGNAL(stateChanged(int)), this, SLOT(enableGroupBoxSC(int)));
 	connect(usualCareCB, SIGNAL(stateChanged(int)), this, SLOT(enableGroupBoxUC(int)));
+
 }
 
 Skeleton::~Skeleton()
@@ -44,7 +58,7 @@ QGroupBox *Skeleton::createFirstGroupBox()
 	inputParamGrpBox = new QGroupBox(tr("Input Parameters"));
 
 	numAgentsInput = new QLineEdit("100000", this);
-	numStepsInput = new QLineEdit("100", this);
+	numStepsInput = new QLineEdit("730", this);
 	//numTrialsInput = new QLineEdit("50", this);
 
 	numBoroInput = new QLineEdit(tr("5"), this);
@@ -67,7 +81,7 @@ QGroupBox *Skeleton::createFirstGroupBox()
 
 	formLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	formLayout->addRow("Agent Population  ", numAgentsInput);
-	formLayout->addRow("Simulation Time(Weeks)  ", numStepsInput);
+	formLayout->addRow("Simulation Time(Days)  ", numStepsInput);
 	//formLayout->addRow("Number of trials  ", numTrialsInput);
 
 	formLayout->addRow("Number of Boroughs", numBoroInput);
@@ -110,11 +124,11 @@ QGroupBox *Skeleton::createSecondGroupBox()
 	sessionComboSPR = new QComboBox;
 	sessionComboSPR1 = new QComboBox;
 
-	costGrpBoxSC = createSubGroupBox(trtmentGrpBox, costComboCBT, costComboSPR, "Cost", "CBT cost/session($)", costSteppedCare, "SPR cost/session", costUsualCare);
-	sessionGrpBoxSC = createSubGroupBox(trtmentGrpBox, sessionComboCBT, sessionComboSPR, "Session", "CBT sessions", sessionsCBT, "SPR sessions", sessionsSPR);
+	costGrpBoxSC = createTrtmentSubGroupBox(trtmentGrpBox, costComboCBT, costComboSPR, "Cost", "CBT cost/session($)", costSteppedCare, "SPR cost/session", costUsualCare);
+	sessionGrpBoxSC = createTrtmentSubGroupBox(trtmentGrpBox, sessionComboCBT, sessionComboSPR, "Session", "CBT sessions", sessionsCBT, "SPR sessions", sessionsSPR);
 
-	costGrpBoxUC = createSubGroupBox(trtmentGrpBox, costComboSPR1, NULL,  "Cost", "SPR cost/session($)", costUsualCare, " ", QStringList());
-	sessionGrpBoxUC = createSubGroupBox(trtmentGrpBox, sessionComboSPR1, NULL,  "Session", "SPR sessions", sessionsSPR , " ", QStringList());
+	costGrpBoxUC = createTrtmentSubGroupBox(trtmentGrpBox, costComboSPR1, NULL,  "Cost", "SPR cost/session($)", costUsualCare, " ", QStringList());
+	sessionGrpBoxUC = createTrtmentSubGroupBox(trtmentGrpBox, sessionComboSPR1, NULL,  "Session", "SPR sessions", sessionsSPR , " ", QStringList());
 
 	QVBoxLayout *vbox = new QVBoxLayout;
 	vbox->addWidget(steppedCareCB);
@@ -153,7 +167,52 @@ QGroupBox *Skeleton::createThirdGroupBox()
 	return pushBtnGrpBox;
 }
 
-QGroupBox *Skeleton::createSubGroupBox(QGroupBox *grpBox, QComboBox *combo1, QComboBox *combo2, const QString boxTitle, const QString c1Label, QStringList c1Items , const QString c2Label, QStringList c2Items)
+QGroupBox *Skeleton::createFourthGroupBox()
+{
+	resourcesGrpBox = new QGroupBox(tr("Resources"));
+
+	mealPerDay = new QLineEdit(tr("2"), this);
+	mealPerDay->setValidator(new QIntValidator(0, 4));
+
+	durMealDist = new QLineEdit(tr("100"), this);
+	durMealDist->setValidator(new QIntValidator(0, 730));
+
+	bronxMealServed = new QLineEdit(tr("229000"), this);
+	bronxMealServed->setValidator(new QIntValidator(0, 10000000, this));
+	bronxGrpBox = createResourcesSubGroupBox(resourcesGrpBox, bronxMealServed,"Bronx");
+
+	brookMealServed = new QLineEdit(tr("2700000"), this);
+	brookMealServed->setValidator(new QIntValidator(0, 10000000, this));
+	brookGrpBox = createResourcesSubGroupBox(resourcesGrpBox, brookMealServed, "Brooklyn");
+
+	manhMealServed = new QLineEdit(tr("577000"), this);
+	manhMealServed->setValidator(new QIntValidator(0, 10000000, this));
+	manhGrpBox = createResourcesSubGroupBox(resourcesGrpBox, manhMealServed, "Manhattan");
+
+	queensMealServed = new QLineEdit(tr("1500000"), this);
+	queensMealServed->setValidator(new QIntValidator(0, 10000000, this));
+	queensGrpBox = createResourcesSubGroupBox(resourcesGrpBox, queensMealServed, "Queens");
+
+	statenMealServed = new QLineEdit(tr("397000"), this);
+	statenMealServed->setValidator(new QIntValidator(0, 10000000, this));
+	statenGrpBox = createResourcesSubGroupBox(resourcesGrpBox, statenMealServed, "Staten Island");
+
+	QFormLayout *formLayout = new QFormLayout;
+	formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+	formLayout->addRow("Number of meals/day", mealPerDay);
+	formLayout->addRow("Duration of meal distribution (days)", durMealDist);
+	formLayout->addRow(bronxGrpBox);
+	formLayout->addRow(brookGrpBox);
+	formLayout->addRow(manhGrpBox);
+	formLayout->addRow(queensGrpBox);
+	formLayout->addRow(statenGrpBox);
+
+	resourcesGrpBox->setLayout(formLayout);
+
+	return resourcesGrpBox;
+}
+
+QGroupBox *Skeleton::createTrtmentSubGroupBox(QGroupBox *grpBox, QComboBox *combo1, QComboBox *combo2, const QString boxTitle, const QString c1Label, QStringList c1Items , const QString c2Label, QStringList c2Items)
 {
 	QGroupBox *subGrpBox = new QGroupBox(boxTitle, grpBox);
 	subGrpBox->setDisabled(true);
@@ -181,6 +240,19 @@ QGroupBox *Skeleton::createSubGroupBox(QGroupBox *grpBox, QComboBox *combo1, QCo
 	
 }
 
+QGroupBox *Skeleton::createResourcesSubGroupBox(QGroupBox *grpBox, QLineEdit *mealServed, const QString boxTitle)
+{
+	QGroupBox *subGrpBox = new QGroupBox(boxTitle, grpBox);
+
+	QFormLayout *formLayout = new QFormLayout;
+	formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+	formLayout->addRow("Meals served", mealServed);
+
+	subGrpBox->setLayout(formLayout);
+
+	return subGrpBox;
+}
+
 void Skeleton::initialize()
 {
 
@@ -205,6 +277,18 @@ void Skeleton::initialize()
 		_raceCat = numRaceCatInput->text().toInt();
 		_incCat = numIncCatInput->text().toInt();
 		_subIncCat = numSubIncCatInput->text().toInt();
+
+		_mealInventoryBronx = bronxMealServed->text().toInt();
+		_mealInventoryBrook = brookMealServed->text().toInt();
+		_mealInventoryManh = manhMealServed->text().toInt();
+		_mealInventoryQueens = queensMealServed->text().toInt();
+		_mealInventoryStaten = statenMealServed->text().toInt();
+
+		_numPplServedBronx = _mealInventoryBronx / (mealPerDay->text().toInt() * durMealDist->text().toInt());
+		_numPplServedBrook = _mealInventoryBrook / (mealPerDay->text().toInt() * durMealDist->text().toInt());
+		_numPplServedManh = _mealInventoryManh / (mealPerDay->text().toInt() * durMealDist->text().toInt());
+		_numPplServedQueens = _mealInventoryQueens / (mealPerDay->text().toInt() * durMealDist->text().toInt());
+		_numPplServedStaten = _mealInventoryStaten / (mealPerDay->text().toInt() * durMealDist->text().toInt());
 
 		if(steppedCareCB->isChecked())
 		{
@@ -356,7 +440,7 @@ void Skeleton::realtimeDataSlot()
 
 	if(timeCounter < _numSteps)
 	{
-
+		boost::range::random_shuffle(_agentListFinal);
 		for(auto agent = _agentListFinal.begin(); agent != _agentListFinal.end(); ++agent)
 		{
 			agent->decayPTSDsymptom();
@@ -365,11 +449,6 @@ void Skeleton::realtimeDataSlot()
 			{
 				countPTSD++;
 			}
-
-			/*if(agent->getIndvIncome() > 80000 && agent->getIndvIncome() < 100000 && agent->getBorough() == BRONX)
-			{
-				std::cout << agent->getID() <<"\t" << agent->getAge() << "\t" << agent->getIndvIncome() << std:: endl;
-			}*/
 		}
 
 		float perPTSD = (float)countPTSD/_numAgents;
