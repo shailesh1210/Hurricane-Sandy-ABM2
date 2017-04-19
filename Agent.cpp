@@ -12,7 +12,7 @@
 
 Agent::Agent(FileHandling *file): _file(file), ID(0), key(0), ageCat(0), age(0), race(0), gender(-1), income(0), borough(0), yrsEmployed(0), subInc(0), 
 	indIncome(0), avgHHIncome(0), avgHHSaving(0), hhSize(0), damage(0), lossElectric(NO_ELECTRIC_LOSS), lossHeat(NO_HEAT_LOSS), lossWater(NO_WATER_LOSS), /*lossFinancial(NO_FINANCIAL_LOSS),*/ 
-	lossFinancialType(0), lossFinancialAmnt(0), incDecline(0), leftHome(-1), PTSDstatus(-1), PTSDx(0) 
+	lossFinancialType(0), lossFinancialAmnt(0), incDecline(0), leftHome(-1), PTSDstatus(-1), PTSDx(0), mealsCount(0) 
 {
 
 }
@@ -36,6 +36,12 @@ void Agent::setAgentAttributes(int idx)
 
 	yrsEmployed = randomIntegerGenerator(1, age - 16);
 	yrsEmployed = (yrsEmployed > 5) ? randomIntegerGenerator(1, 5) : yrsEmployed;
+}
+
+void Agent::executeAgentRules(Skeleton *world)
+{
+	accessBasicNeeds(world);
+	decayPTSDsymptom();
 }
 
 //@proportions obtained by cross classification of age, race and gender estimates from ACS 2008-2012 by census tract of affected areas
@@ -149,9 +155,39 @@ void Agent::houseSubIncomeDist()
 	}
 }
 
+void Agent::accessBasicNeeds(Skeleton *world)
+{
+	if(avgHHIncome < INCOME_THRESHOLD_BASIC_NEEDS)
+	{
+		if((leftHome == LEFT_HOME_NO && incDecline == INCOME_LOSS_YES) || (leftHome == LEFT_HOME_YES && incDecline == INCOME_LOSS_NO) ||
+		  (leftHome == LEFT_HOME_YES && incDecline == INCOME_LOSS_YES)|| (leftHome == LEFT_HOME_NO && incDecline == INCOME_LOSS_NO && avgHHSaving < 0))
+		{
+			for(unsigned int i = 0; i < NUM_BOROUGHS; i++)
+			{
+				if(borough == i+1)
+				{
+					if(world->_mealInventory[i] > 0)
+					{
+						if(world->_countPplServed[i] < world->_totalPplServed[i])
+						{
+							mealsCount += world->_mealPerDay;
+							world->_mealInventory[i] = world->_mealInventory[i] - world->_mealPerDay;
+							world->_countPplServed[i]++;
+						}
+					}
+					else
+					{
+						world->_mealInventory[i] = 0;
+					}
+				}
+			}
+		}
+	}
+}
+
 void Agent::decayPTSDsymptom()
 {
-	PTSDx = PTSDx - 0.015*uniformRealDist()*PTSDx;
+	PTSDx = PTSDx - 0.0025*uniformRealDist()*PTSDx;
 	
 }
 
