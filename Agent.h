@@ -3,8 +3,10 @@
 
 #include <iostream>
 #include <memory>
+#include "skeleton.h"
 
 class FileHandling;
+
 
 class Agent
 {
@@ -14,6 +16,7 @@ public:
 
 	
 	void setAgentAttributes(int idx);
+	void executeAgentRules(Skeleton *world);
 
 	int getID() const;
 	int getKey() const;
@@ -54,7 +57,7 @@ public:
 	void setPTSDstatus(int statusPTSD);
 	void setPTSDsymptom(double inPTSDx);
 
-	void decayPTSDsymptom();
+
 	
 protected:
 	//methods to assign age, race and gender to agents in different boroughs
@@ -64,7 +67,8 @@ protected:
 	void houseIncomeDist();
 	void houseSubIncomeDist();
 
-
+	void accessBasicNeeds(Skeleton *world);
+	void decayPTSDsymptom();
 
 	int randomIntegerGenerator(int min, int max);
 	double uniformRealDist();
@@ -94,6 +98,8 @@ protected:
 	int leftHome; //indicates whether agent left home or not due to damage caused by Sandy. 0-Didnot leave home 1 - left home
 	int PTSDstatus; //indicates whether agent has positive PTSD case status or not based on whether it left home
 	double PTSDx; //number of PTSD symptom count
+
+	int mealsCount;
 };
 
 #endif __Agent_h__
