@@ -94,6 +94,10 @@
 
 #define MAX_PEOPLE_HHSIZE4 6
 
+#define INCOME_THRESHOLD_BASIC_NEEDS 60000
+
+#define NUM_BOROUGHS 5
+
 ////simulation parameters
 //#define NUM_AGENTS 500000
 //#define NUM_STEPS 100
@@ -204,6 +208,10 @@ typedef boost::container::vector <Agent> AgentList;
 typedef boost::container::vector <Family> FamilyList;
 
 //typedef std::vector<Agent> AgentVector;
+
+//typedef std::vector <Agent> AgentList;
+////typedef boost::container::list <Family> FamilyList;
+//typedef std::vector <Family> FamilyList;
 
 
 #endif __Parameters_h__
