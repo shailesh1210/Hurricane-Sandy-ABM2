@@ -17,7 +17,7 @@
 
 
 Skeleton::Skeleton(QWidget *parent)
-	: QWidget(parent)
+	: QWidget(parent), _mealInventory(NUM_BOROUGHS, 0), _totalPplServed(NUM_BOROUGHS, 0), _countPplServed(NUM_BOROUGHS, 0)
 {
 	/*QGridLayout *grid = new QGridLayout(this);
 	grid->addWidget(createFirstGroupBox(), 0, 0);
@@ -177,23 +177,23 @@ QGroupBox *Skeleton::createFourthGroupBox()
 	durMealDist = new QLineEdit(tr("100"), this);
 	durMealDist->setValidator(new QIntValidator(0, 730));
 
-	bronxMealServed = new QLineEdit(tr("229000"), this);
+	bronxMealServed = new QLineEdit(tr("2290"), this);
 	bronxMealServed->setValidator(new QIntValidator(0, 10000000, this));
 	bronxGrpBox = createResourcesSubGroupBox(resourcesGrpBox, bronxMealServed,"Bronx");
 
-	brookMealServed = new QLineEdit(tr("2700000"), this);
+	brookMealServed = new QLineEdit(tr("27000"), this);
 	brookMealServed->setValidator(new QIntValidator(0, 10000000, this));
 	brookGrpBox = createResourcesSubGroupBox(resourcesGrpBox, brookMealServed, "Brooklyn");
 
-	manhMealServed = new QLineEdit(tr("577000"), this);
+	manhMealServed = new QLineEdit(tr("5770"), this);
 	manhMealServed->setValidator(new QIntValidator(0, 10000000, this));
 	manhGrpBox = createResourcesSubGroupBox(resourcesGrpBox, manhMealServed, "Manhattan");
 
-	queensMealServed = new QLineEdit(tr("1500000"), this);
+	queensMealServed = new QLineEdit(tr("15000"), this);
 	queensMealServed->setValidator(new QIntValidator(0, 10000000, this));
 	queensGrpBox = createResourcesSubGroupBox(resourcesGrpBox, queensMealServed, "Queens");
 
-	statenMealServed = new QLineEdit(tr("397000"), this);
+	statenMealServed = new QLineEdit(tr("3970"), this);
 	statenMealServed->setValidator(new QIntValidator(0, 10000000, this));
 	statenGrpBox = createResourcesSubGroupBox(resourcesGrpBox, statenMealServed, "Staten Island");
 
@@ -246,7 +246,7 @@ QGroupBox *Skeleton::createResourcesSubGroupBox(QGroupBox *grpBox, QLineEdit *me
 
 	QFormLayout *formLayout = new QFormLayout;
 	formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-	formLayout->addRow("Meals served", mealServed);
+	formLayout->addRow("Meals served/day", mealServed);
 
 	subGrpBox->setLayout(formLayout);
 
@@ -278,17 +278,18 @@ void Skeleton::initialize()
 		_incCat = numIncCatInput->text().toInt();
 		_subIncCat = numSubIncCatInput->text().toInt();
 
-		_mealInventoryBronx = bronxMealServed->text().toInt();
-		_mealInventoryBrook = brookMealServed->text().toInt();
-		_mealInventoryManh = manhMealServed->text().toInt();
-		_mealInventoryQueens = queensMealServed->text().toInt();
-		_mealInventoryStaten = statenMealServed->text().toInt();
+		_mealPerDay = mealPerDay->text().toInt();
+		_durMealDist = durMealDist->text().toInt();
 
-		_numPplServedBronx = _mealInventoryBronx / (mealPerDay->text().toInt() * durMealDist->text().toInt());
-		_numPplServedBrook = _mealInventoryBrook / (mealPerDay->text().toInt() * durMealDist->text().toInt());
-		_numPplServedManh = _mealInventoryManh / (mealPerDay->text().toInt() * durMealDist->text().toInt());
-		_numPplServedQueens = _mealInventoryQueens / (mealPerDay->text().toInt() * durMealDist->text().toInt());
-		_numPplServedStaten = _mealInventoryStaten / (mealPerDay->text().toInt() * durMealDist->text().toInt());
+		_mealInventory[BRONX-1] = bronxMealServed->text().toInt() * _durMealDist; //Meal inventory for Bronx
+		_mealInventory[BROOKLYN-1] = brookMealServed->text().toInt() * _durMealDist; //Meal inventory for Brooklyn
+		_mealInventory[MANHATTAN-1] = manhMealServed->text().toInt() * _durMealDist; //Meal inventory for Manhattan
+		_mealInventory[QUEENS-1] = queensMealServed->text().toInt() * _durMealDist; //Meal inventory for Queens
+		_mealInventory[STATEN-1] = statenMealServed->text().toInt() * _durMealDist; //Meal inventory for Staten
+
+		for(unsigned int i = 0; i < _numBoro; i++){
+			_totalPplServed[i] = _mealInventory[i]/(_mealPerDay*_durMealDist);
+		}
 
 		if(steppedCareCB->isChecked())
 		{
@@ -319,7 +320,7 @@ void Skeleton::initialize()
 			_costSPR1trtment = 0;
 			_sessionSPR1 = 0;
 		}
-		
+
 		createAgents();
 		createHousehold();
 
@@ -342,38 +343,39 @@ void Skeleton::initialize()
 
 void Skeleton::run()
 {
-	timeCounter = 0;
+	//timeCounter = 0;
 
-	customPlot = new QCustomPlot;
-	customPlot->resize(1000, 400);
-	customPlot->show();
+	//customPlot = new QCustomPlot;
+	//customPlot->resize(1000, 400);
+	//customPlot->show();
 
-	customPlot->addGraph(); // blue line
-	customPlot->graph(0)->setPen(QPen(QColor(40, 110, 255)));
-	customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross,5));
-	customPlot->xAxis->setRange(0, _numSteps+10);
-	customPlot->yAxis->setRange(0, 7);
+	//customPlot->addGraph(); // blue line
+	//customPlot->graph(0)->setPen(QPen(QColor(40, 110, 255)));
+	//customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross,5));
+	//customPlot->xAxis->setRange(0, _numSteps+10);
+	//customPlot->yAxis->setRange(0, 7);
 
 	
-	connect(&dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()));
-	dataTimer.start(0);
+	//connect(&dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()));
+	//dataTimer.start(0);
 
 
-	/*for(int j = 0; j < _numSteps; j++)
+	for(int i = 0; i < _numSteps; i++)
 	{
-		std::cout << "Iteration number: " << j << "\n\n";
-		for(auto it1 = _famList.begin(); it1 != _famList.end(); ++it1)
+		//boost::range::random_shuffle(_agentListFinal);
+		std::random_shuffle(_agentListFinal.begin(), _agentListFinal.end());
+		for(auto agent = _agentListFinal.begin(); agent != _agentListFinal.end(); ++agent)
 		{
-			for(auto it2 = it1->_agentFamList.begin(); it2 != it1->_agentFamList.end(); ++it2)
+			agent->executeAgentRules(this);
+			if(agent->getBorough() == BRONX && agent->getAvgHHIncome() < 60000 && i == _numSteps - 1)
 			{
-				std::cout << it2->getAgeCat() << "\t" << it2->getRace() << "\t" << it2->getIncome() << "\t" << it2->getBorough() << "\t" << it2->getHHsize() << std::endl;
+				_testAgent.push_back(*agent);
 			}
-
-			std::cout << std::endl;
 		}
 
-		std::cout << "\n";
-	}*/
+		std::cout << i << "\t" << _mealInventory[0] << "\t" << _mealInventory[1] << "\t" << _mealInventory[2]<< "\t" << _mealInventory[3] << "\t" << _mealInventory[4] << std::endl;
+		resetCounter();
+	}
 
 	_run->setDisabled(true);
 }
@@ -381,8 +383,17 @@ void Skeleton::run()
 void Skeleton::reset()
 {
 	numAgentsInput->setText("100000");
-	numStepsInput->setText("100");
+	numStepsInput->setText("730");
 	//numTrialsInput->setText("50");
+
+	mealPerDay->setText("2");
+	durMealDist->setText("100");
+
+	bronxMealServed->setText("2290");
+	brookMealServed->setText("27000");
+	manhMealServed->setText("5770");
+	queensMealServed->setText("15000");
+	statenMealServed->setText("3970");
 
 	_showStats->setDisabled(true);
 	_run->setDisabled(true);
@@ -440,21 +451,29 @@ void Skeleton::realtimeDataSlot()
 
 	if(timeCounter < _numSteps)
 	{
-		boost::range::random_shuffle(_agentListFinal);
+		//boost::range::random_shuffle(_agentListFinal);
+		std::random_shuffle(_agentListFinal.begin(), _agentListFinal.end());
 		for(auto agent = _agentListFinal.begin(); agent != _agentListFinal.end(); ++agent)
 		{
-			agent->decayPTSDsymptom();
+			//agent->executeAgentRules(this);
 			float PTSDx = agent->getPTSDsymptom();
 			if(PTSDx > 6.0)
 			{
 				countPTSD++;
 			}
+
+			if(agent->getBorough() == BRONX && agent->getAvgHHIncome() < 60000)
+			{
+				_testAgent.push_back(*agent);
+			}
 		}
 
 		float perPTSD = (float)countPTSD/_numAgents;
-		std::cout << timeCounter << "\t" << perPTSD << "\t" << _agentListFinal.size() << std::endl;
+		//std::cout << timeCounter << "\t" << perPTSD << "\t" << _agentListFinal.size() << std::endl;
 
 		customPlot->graph(0)->addData(timeCounter, 100*perPTSD);
+
+		std::cout << timeCounter << "\t" << _mealInventoryBronx << std::endl;
 	}
 	else
 	{
@@ -645,6 +664,17 @@ void Skeleton::addUnmatchedAgents(int &index)
 
 	_tempAgentsMap.clear();
 }
+
+void Skeleton::resetCounter()
+{
+	for(unsigned int i = 0; i < _numBoro; i++){
+		_countPplServed[i] = 0;
+	}
+}
+
+
+
+
 
 
 
