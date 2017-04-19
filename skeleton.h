@@ -126,14 +126,18 @@ protected:
 	void addUnmatchedAgents(int &index);
 
 protected:
+	void resetCounter();
+
+protected:
 
 	AgentMap _tempAgentsMap;
 	AgentList _agentListFinal;
 
+	AgentList _testAgent;
+
 	FamilyList _famList;
 	FamilyList _famListHHsize2;
 	
-
 	int _numAgents;
 	int _numSteps;
 	int _numTrials;
@@ -143,6 +147,8 @@ protected:
 	int _raceCat;
 	int _incCat;
 	int _subIncCat;
+
+	
 
 	int _mealInventoryBronx;
 	int _numPplServedBronx;
@@ -169,6 +175,14 @@ protected:
 	int _costSPR1trtment;
 	int _sessionSPR1;
 
+public:
+
+	std::vector<int> _mealInventory;
+	std::vector<int> _totalPplServed;
+	std::vector<int> _countPplServed;
+
+	int _mealPerDay;
+	int _durMealDist;
 };
 
 #endif SKELETON_H
