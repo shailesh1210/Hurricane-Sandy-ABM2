@@ -13,6 +13,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/container/list.hpp>
 #include <boost/container/vector.hpp>
+//#include <boost/fusion/include/pair.hpp>
 
 #define AGE1 1 //age 18 - 34
 #define AGE1_MIN 18
@@ -39,6 +40,8 @@
 #define INCOME2_MIN 40000
 #define INCOME3_MIN 80000 
 #define INCOME3_MAX 500000
+
+#define INCOME_THRESHOLD 60000
 
 #define SUBINC1 1 // income < 20K
 #define SUBINC2 2 // income 20-40K
@@ -94,123 +97,166 @@
 
 #define MAX_PEOPLE_HHSIZE4 6
 
-#define INCOME_THRESHOLD_BASIC_NEEDS 60000
-
 #define NUM_BOROUGHS 5
 
-////simulation parameters
-//#define NUM_AGENTS 500000
-//#define NUM_STEPS 100
-//
 
-//struct Borough
-//{
-//	double pBorough;
-//	int inBorough;
-//};
+//definition of agent's mental health state
+#define EXCELLENT 0 // LeftHome = False, IncomeDecline = False; PTSD status = -ve
+#define VERY_GOOD 1 // LeftHome = True, IncomeDecline = False; PTSD status = -ve
+#define GOOD 2 // LeftHome = False, IncomeDecline = True; PTSD status = -ve
+#define AVERAGE 3 // LeftHome = True, IncomeDecline = True; PTSD status = -ve
+#define BELOW_AVERAGE 4 // LeftHome = False, IncomeDecline = False; PTSD status = +ve
+#define POOR 5 //LeftHome = True, IncomeDecline = False; PTSD status = +ve
+#define VERY_POOR 6 //LeftHome = False, IncomeDecline = True; PTSD status = +ve
+#define WORST 7 // LeftHome = True, IncomeDecline = True; PTSD status = +ve
+
+//displacement parameters
+#define WEEKS_DISPLACED_MIN_MODERATE 4//30
+#define WEEKS_DISPLACED_MAX_MODERATE 8//60
+
+#define WEEKS_DISPLACED_MIN_SEVERE 8//60
+#define WEEKS_DISPLACED_MAX_SEVERE 14//100
+
+#define WEEKS_DISPLACED_MIN_T2 1//2
+#define WEEKS_DISPLACED_MAX_T2 4//14
+
+//PTSD parameters
+#define POSITIVE 1
+#define NEGATIVE 0
+
+//Financial help parameters
+#define EXPEDITE 2
+#define NORMAL 1
+
+#define WAIT_TIME 12
+
+#define EXPEDITE_WEEKS_MIN 1//4//30//30//30
+#define EXPEDITE_WEEKS_MAX 3//8//12//90//90//60
+
+#define NORMAL_WEEKS_MIN 8//8//12//90//90//60
+#define NORMAL_WEEKS_MAX 16//16//64//450//450//120
+
+//natural decay parameters
+
+#define PROP_NATURAL_DECAY 0.3
+#define ND_MONTHS_TO_WEEKS 12//84
+
+#define CBT_TIME_NON_CASES 3//21
+#define PTSD_CUT_OFF 6.0
+#define PROP_RELAPSE 0.15
+
+#define FLAG_CBT_CASES 1
+#define FLAG_SPR_CASES 2
+#define FLAG_CBT_NON_CASES 3
+#define FLAG_SPR_NON_CASES 4
+
+
+struct Borough
+{
+	float pBorough;
+	unsigned short int inBorough;
+};
 
 struct Demographics
 {
-	double pDemoAtt;
-	int inBorough, inAge, inRace, inGender;
+	float pDemoAtt;
+	unsigned short int inBorough, inAge, inRace, inGender;
 };
 
 struct Household
 {
-	double pHHsize;
-	int inHHSize, inBoro;
+	float pHHsize;
+	unsigned short int inHHSize, inBoro;
 };
 
 struct Income
 {
-	double pIncome;
-	int inHHsize, inBoro, inIncome;
+	float pIncome;
+	unsigned short int inHHsize, inBoro; 
+	int inIncome;
 
 };
 
 struct SubIncome
 {
-	double pSubInc;
-	int inIncome, inSubIncome, inBoro;
+	float pSubInc;
+	int inIncome, inSubIncome; 
+	unsigned short int inBoro;
 	int minIncome, maxIncome;
 };
 
 struct Expense
 {
-	int inHHsize; 
+	unsigned short int inHHsize; 
 	int minIncome;
 	int maxIncome;
-	double ratioExpenseInc;
+	float ratioExpenseInc;
 };
 
 struct SandyDamage
 {
-	double pSandyDamage;
-	int inDamage, inIncome, inBoro;
+	float pSandyDamage;
+	unsigned short int inDamage; 
+	int inIncome; 
+	unsigned short int inBoro;
 };
 
 struct SandyFinancialLoss
 {
-	double pFinLossType;
-	int inBorough, inFinLossType, minLossAmnt, maxLossAmnt;
+	float pFinLossType;
+	unsigned short int inBorough, inFinLossType; 
+	int minLossAmnt, maxLossAmnt;
 };
 
-struct SandyPTSD
+struct SandyPTSDstatus
 {
-	double pSandyPTSD;
-	int inIncomeLoss;
-	int inLeftHome, inPTSDstatus;
-	double inPTSDx;
+	float pSandyPTSD;
+	unsigned short int inIncomeLoss;
+	unsigned short int inGender;
+	unsigned short int inAgeCat;
+	unsigned short int inPTSDstatus;
+	//unsigned short int inLeftHome, inPTSDstatus;
+};
+
+struct SandyPTSDx
+{
+	unsigned short int keyPTSDx;
+	float inPTSDx;
+};
+
+struct SandyFinancialReimbursement
+{
+	float pReimbursement;
+	unsigned short int inBorough;
 };
 
 
 class Agent;
 class Family;
-//typedef std::vector <Borough> BoroVector;
-//typedef std::vector <Demographics> DemoVector;
-typedef boost::container::vector <Demographics> DemoVector;
-//typedef std::vector <Household> HouseholdVector;
-//typedef std::vector <Income> IncomeVector;
-//typedef std::vector <SubIncome> SubIncomeVector;
-//typedef std::vector <Expense> ExpenseVector;
-//typedef std::vector <SandyDamage> SandyDamageVector;
-//typedef std::vector <SandyFinancialLoss> SandyFinLossVector;
-//typedef std::vector <SandyPTSD> SandyPTSDvector;
 
+typedef boost::container::vector<Borough> BoroughVector;
+typedef boost::unordered_multimap<unsigned short int, Demographics> DemographMap;
+typedef boost::unordered_multimap<unsigned short int, Household> HouseHoldMap;
+typedef boost::unordered_multimap<unsigned short int, Income> IncomeMap;
+typedef boost::unordered_multimap<unsigned short int, SubIncome> SubIncomeMap;
+typedef boost::unordered_multimap<unsigned short int, Expense> ExpenseMap;
+typedef boost::unordered_multimap<unsigned short int, SandyDamage> SandyDamageMap;
+typedef boost::unordered_multimap<unsigned short int, SandyFinancialLoss> SandyFinLossMap;
+typedef boost::unordered_multimap<unsigned short int, SandyPTSDstatus> SandyPTSDstatusMap;
+typedef boost::unordered_multimap<unsigned short int, float> SandyPTSDxMap;
+typedef boost::unordered_multimap<unsigned short int, float> SandyFinReimburseMap;
 
-//typedef std::unordered_multimap<int, Household> HouseHoldMap;
-//typedef std::unordered_multimap<int, Income> IncomeMap;
-//typedef std::unordered_multimap<int, SubIncome> SubIncomeMap;
-//typedef std::unordered_multimap<int, Expense> ExpenseMap;
-//typedef std::unordered_multimap<int, SandyDamage> SandyDamageMap;
-//typedef std::unordered_multimap<int, SandyFinancialLoss> SandyFinLossMap;
-//typedef std::unordered_multimap<int, SandyPTSD> SandyPTSDMap;
-//
-//typedef std::unordered_multimap<int, Agent> AgentMap;
+typedef boost::unordered_multimap<unsigned short int, Agent> AgentMap;
 
-typedef boost::unordered_multimap<int, Household> HouseHoldMap;
-typedef boost::unordered_multimap<int, Income> IncomeMap;
-typedef boost::unordered_multimap<int, SubIncome> SubIncomeMap;
-typedef boost::unordered_multimap<int, Expense> ExpenseMap;
-typedef boost::unordered_multimap<int, SandyDamage> SandyDamageMap;
-typedef boost::unordered_multimap<int, SandyFinancialLoss> SandyFinLossMap;
-typedef boost::unordered_multimap<int, SandyPTSD> SandyPTSDMap;
+//typedef std::vector <Agent> AgentList;
 
-typedef boost::unordered_multimap<int, Agent> AgentMap;
-
-//
-//typedef std::list <Agent> AgentList;
-//typedef std::list <Family> FamilyList;
-
-//typedef boost::container::list <Agent> AgentList;
 typedef boost::container::vector <Agent> AgentList;
-//typedef boost::container::list <Family> FamilyList;
 typedef boost::container::vector <Family> FamilyList;
+
 
 //typedef std::vector<Agent> AgentVector;
 
 //typedef std::vector <Agent> AgentList;
-////typedef boost::container::list <Family> FamilyList;
 //typedef std::vector <Family> FamilyList;
 
 
