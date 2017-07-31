@@ -7,11 +7,11 @@
 
 
 
-Statistics::Statistics(QWidget *parent, AgentList &_agentListFinal, int _numBoro, int _numAge, int _numRace, int _numIncome, int _numAgents) :
-	agentListFinal(_agentListFinal), numBoro(_numBoro), numAge(_numAge), numRace(_numRace), numIncome(_numIncome), numAgents(_numAgents), numDamageType(3), 
-	numLeftHome(2), numPTSDstatus(2), numFinLossType(4), populationCount(_numBoro, 0), ageCount(_numBoro*_numAge, 0), raceCount(_numBoro*_numRace, 0), 
-	incCount(_numBoro*_numIncome, 0), elecLossCount(_numBoro, 0), waterLossCount(_numBoro, 0), heatLossCount(_numBoro, 0), damageTypeCount(3*_numBoro, 0), 
-	leftHomeCount(2*_numBoro, 0), ptsdStatusCount(2*_numBoro, 0), finLossTypeCount(4*_numBoro, 0), textTicker(new QCPAxisTickerText)
+Statistics::Statistics(QWidget *parent, AgentList &_agentListFinal, int inNumBoro, int inNumAge, int inNumRace, int inNumIncome, int inNumAgents) :
+	agentListFinal(_agentListFinal), numBoro(inNumBoro), numAge(inNumAge), numRace(inNumRace), numIncome(inNumIncome), numAgents(inNumAgents), numDamageType(3), 
+	numLeftHome(2), numPTSDstatus(2), numFinLossType(4), populationCount(inNumBoro, 0), ageCount(inNumBoro*inNumAge, 0), raceCount(inNumBoro*inNumRace, 0), 
+	incCount(inNumBoro*inNumIncome, 0), elecLossCount(inNumBoro, 0), waterLossCount(inNumBoro, 0), heatLossCount(inNumBoro, 0), damageTypeCount(3*inNumBoro, 0), 
+	leftHomeCount(2*inNumBoro, 0), ptsdStatusCount(2*inNumBoro, 0), finLossTypeCount(4*inNumBoro, 0), textTicker(new QCPAxisTickerText)
 {
 	QDesktopWidget *m = QApplication::desktop();
 	QRect desk_rect = m->screenGeometry(m->screenNumber(QCursor::pos()));
@@ -142,8 +142,6 @@ void Statistics::demographicStats()
 
 	displayBarGraph(plot1, popChart, ageChart, raceChart, incomeChart); //displays bar graphs for plot1 (demograhic stats)
 	displayBarGraph(plot2, damageChart, utilityLossChart, displacementChart, financialLossChart);
-
-	
 }
 
 void Statistics::counterAgeByBorough(unsigned int i)
