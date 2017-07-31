@@ -15,57 +15,77 @@
 #include <QMap>
 #include <QDebug>
 
-
-Skeleton::Skeleton(QWidget *parent)
-	: QWidget(parent), _mealInventory(NUM_BOROUGHS, 0), _totalPplServed(NUM_BOROUGHS, 0), _countPplServed(NUM_BOROUGHS, 0)
+Skeleton::Skeleton(QWidget *parent) : QWidget(parent) 
 {
-	/*QGridLayout *grid = new QGridLayout(this);
-	grid->addWidget(createFirstGroupBox(), 0, 0);
-	grid->addWidget(createSecondGroupBox(), 1, 0);
-	grid->addWidget(createThirdGroupBox(), 2, 0);
-	grid->addWidget(createFourthGroupBox(), 0, 1);*/
+	QVBoxLayout *vBoxLeft = new QVBoxLayout;
 
-	QVBoxLayout *vboxLeft = new QVBoxLayout;
-	vboxLeft->addWidget(createFirstGroupBox());
-	vboxLeft->addWidget(createSecondGroupBox());
+	vBoxLeft->addWidget(createFirstGroupBox());
+	vBoxLeft->addWidget(createSecondGroupBox());
+	vBoxLeft->addWidget(createThirdGroupBox());
+	vBoxLeft->addWidget(createFourthGroupBox());
+	
+	red = QVector <int>() << 255 << 0 << 204 << 0 << 153 << 255 << 128 << 0;
+	blue = QVector<int>() << 0 << 102 << 102 << 153 << 0 << 0 << 128 << 0;
+	green = QVector<int>() << 0 << 204 << 0 << 76 << 76 << 127 << 128 << 0;
 
-	QVBoxLayout *vboxRight = new QVBoxLayout;
-	vboxRight->addWidget(createFourthGroupBox());
-	vboxRight->addWidget(createThirdGroupBox());
+	QMap <int, QString> ptsdPlotTitle;
+	//ptsdPlotTitle.insert(0, "PTSD persistence and treatment uptake");
+	ptsdPlotTitle.insert(0, "Income Loss = False");
+	ptsdPlotTitle.insert(1, "Income Loss = True");
+
+	for(unsigned int i = 0 ; i < NUM_PTSD_PLOTS; i++)
+	{
+		ptsdPlot[i] = createPTSDPlot(ptsdPlotTitle[i]);
+	}
+
+	statePlot1 = createStatePlot("State transition (Stepped Care with Social Services)");
+	//statePlot1 = createStatePlot("State transition (Stepped Care without Social Services)");
+	statePlot2 = createStatePlot("State transition (Usual Care)");
+
+	QVBoxLayout *vBoxMiddle = new QVBoxLayout;
+	vBoxMiddle->addWidget(ptsdPlot[0]);
+	//vBoxMiddle->addWidget(ptsdPlot[2]);
+	vBoxMiddle->addWidget(statePlot1);
+
+	QVBoxLayout *vBoxRight = new QVBoxLayout;
+	vBoxRight->addWidget(ptsdPlot[1]);
+	//vBoxRight->addWidget(ptsdPlot[3]);
+	vBoxRight->addWidget(statePlot2);
+
+	QHBoxLayout *hBoxRight = new QHBoxLayout;
+	hBoxRight->addLayout(vBoxMiddle);
+	hBoxRight->addLayout(vBoxRight);
 
 	QHBoxLayout *mainLayout = new QHBoxLayout(this);
-	mainLayout->addLayout(vboxLeft);
-	mainLayout->addLayout(vboxRight);
+	mainLayout->addLayout(vBoxLeft);
+	mainLayout->addLayout(hBoxRight,1);
 
-	////ui.setupUi(this);
-
-	connect(_initialize, SIGNAL(clicked()), this, SLOT(initialize()));
-	connect(_run, SIGNAL(clicked()), this, SLOT(run()));
-	connect(_reset, SIGNAL(clicked()), this, SLOT(reset()));
-	connect(_showStats, SIGNAL(clicked()), this, SLOT(stats()));
-	connect(steppedCareCB, SIGNAL(stateChanged(int)), this, SLOT(enableGroupBoxSC(int)));
-	connect(usualCareCB, SIGNAL(stateChanged(int)), this, SLOT(enableGroupBoxUC(int)));
-
+	connect(initializePb, SIGNAL(clicked()), this, SLOT(initialize()));
+	connect(runPb, SIGNAL(clicked()), this, SLOT(run()));
+	connect(resetPb, SIGNAL(clicked()), this, SLOT(reset()));
+	connect(showStatsPb, SIGNAL(clicked()), this, SLOT(stats()));
+	connect(steppedCareCB, SIGNAL(clicked()), this, SLOT(enableSubGroupBoxTrtment()));
+	connect(usualCareCB, SIGNAL(clicked()), this, SLOT(enableSubGroupBoxTrtment()));
 }
 
 Skeleton::~Skeleton()
 {
-	
+	std::cout << "World destructor called!" << std::endl;
 }
 
 QGroupBox *Skeleton::createFirstGroupBox()
 {
 	inputParamGrpBox = new QGroupBox(tr("Input Parameters"));
 
-	numAgentsInput = new QLineEdit("100000", this);
-	numStepsInput = new QLineEdit("730", this);
+	numAgentsInput = new QLineEdit(tr("1500000"), inputParamGrpBox);
+	numStepsInput = new QLineEdit(tr("104"), inputParamGrpBox);
 	//numTrialsInput = new QLineEdit("50", this);
 
-	numBoroInput = new QLineEdit(tr("5"), this);
-	numAgeCatInput = new QLineEdit(tr("3"), this);
-	numRaceCatInput = new QLineEdit(tr("4"), this);
-	numIncCatInput = new QLineEdit(tr("3"), this);
-	numSubIncCatInput = new QLineEdit(tr("7"), this);
+	numBoroInput = new QLineEdit(tr("5"), inputParamGrpBox);
+	numAgeCatInput = new QLineEdit(tr("3"), inputParamGrpBox);
+	numRaceCatInput = new QLineEdit(tr("4"), inputParamGrpBox);
+	numIncCatInput = new QLineEdit(tr("3"), inputParamGrpBox);
+	numSubIncCatInput = new QLineEdit(tr("7"), inputParamGrpBox);
 
 	numBoroInput->setReadOnly(true);
 	numAgeCatInput->setReadOnly(true);
@@ -73,184 +93,346 @@ QGroupBox *Skeleton::createFirstGroupBox()
 	numIncCatInput->setReadOnly(true);
 	numSubIncCatInput->setReadOnly(true);
 
-	numAgentsInput->setValidator(new QIntValidator(0,10000000,this));
-	numStepsInput->setValidator(new QIntValidator(0,10000000,this));
+	numAgentsInput->setValidator(new QIntValidator(0,10000000,inputParamGrpBox));
+	numStepsInput->setValidator(new QIntValidator(0,10000000,inputParamGrpBox));
 	//numTrialsInput->setValidator(new QIntValidator(0,10000000,this));
 	
 	QFormLayout *formLayout = new QFormLayout;
 
-	formLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	//formLayout->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
 	formLayout->addRow("Agent Population  ", numAgentsInput);
-	formLayout->addRow("Simulation Time(Days)  ", numStepsInput);
+	formLayout->addRow("Simulation Time (Weeks)  ", numStepsInput);
+	
 	//formLayout->addRow("Number of trials  ", numTrialsInput);
-
 	formLayout->addRow("Number of Boroughs", numBoroInput);
 	formLayout->addRow("Age Categories ", numAgeCatInput);
 	formLayout->addRow("Race Categories ", numRaceCatInput);
 	formLayout->addRow("Income Categories ", numIncCatInput);
 	formLayout->addRow("Sub-Income Categories ", numSubIncCatInput);
 
-	QVBoxLayout *vbox = new QVBoxLayout;
-	vbox->addLayout(formLayout);
-
-	inputParamGrpBox->setLayout(vbox);
-
+	inputParamGrpBox->setLayout(formLayout);
 	return inputParamGrpBox;
 }
 
 QGroupBox *Skeleton::createSecondGroupBox()
 {
-	QStringList costSteppedCare;
-	QStringList costUsualCare;
+	trtmentGrpBox = new QGroupBox(tr("Treatment Parameters"));
 
-	QStringList sessionsCBT;
-	QStringList sessionsSPR;
+	trtmentTypeGrpBox = createTrtmentSubGroupBox(trtmentGrpBox, "Select Treatment Type", 0);
+	screeningGrpBox = createTrtmentSubGroupBox(trtmentGrpBox, "Screening", 1);
+	trtmentTimeGrpBox = createTrtmentSubGroupBox(trtmentGrpBox, "Treatment Duration", 2);
+	trtmentStrengthGrpBox = createTrtmentSubGroupBox(trtmentGrpBox, "Strength", 3);
+	costGrpBox = createTrtmentSubGroupBox(trtmentGrpBox, "Cost", 4);
+	sessionGrpBox = createTrtmentSubGroupBox(trtmentGrpBox, "Session", 5);
 
-	costSteppedCare << "60" << "120";
-	costUsualCare << "15" << "30";
+	QFormLayout *formLayout = new QFormLayout;
 
-	sessionsCBT << "8" << "12";
-	sessionsSPR << "5" << "8";
+	formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
+	formLayout->addRow(trtmentTypeGrpBox);
+	formLayout->addRow(screeningGrpBox);
+	formLayout->addRow(trtmentTimeGrpBox);
+	formLayout->addRow(trtmentStrengthGrpBox);
+	formLayout->addRow(costGrpBox);
+	formLayout->addRow(sessionGrpBox);
 
-	trtmentGrpBox = new QGroupBox(tr("Select treatment Type"));
-	steppedCareCB = new QCheckBox(tr("Stepped Care"));
-	usualCareCB = new QCheckBox(tr("Usual Care"));
-
-	costComboCBT = new QComboBox;
-	costComboSPR = new QComboBox;
-	costComboSPR1 = new QComboBox;
-
-	sessionComboCBT = new QComboBox;
-	sessionComboSPR = new QComboBox;
-	sessionComboSPR1 = new QComboBox;
-
-	costGrpBoxSC = createTrtmentSubGroupBox(trtmentGrpBox, costComboCBT, costComboSPR, "Cost", "CBT cost/session($)", costSteppedCare, "SPR cost/session", costUsualCare);
-	sessionGrpBoxSC = createTrtmentSubGroupBox(trtmentGrpBox, sessionComboCBT, sessionComboSPR, "Session", "CBT sessions", sessionsCBT, "SPR sessions", sessionsSPR);
-
-	costGrpBoxUC = createTrtmentSubGroupBox(trtmentGrpBox, costComboSPR1, NULL,  "Cost", "SPR cost/session($)", costUsualCare, " ", QStringList());
-	sessionGrpBoxUC = createTrtmentSubGroupBox(trtmentGrpBox, sessionComboSPR1, NULL,  "Session", "SPR sessions", sessionsSPR , " ", QStringList());
-
-	QVBoxLayout *vbox = new QVBoxLayout;
-	vbox->addWidget(steppedCareCB);
-	vbox->addWidget(costGrpBoxSC);
-	vbox->addWidget(sessionGrpBoxSC);
-
-	vbox->addWidget(usualCareCB);
-	vbox->addWidget(costGrpBoxUC);
-	vbox->addWidget(sessionGrpBoxUC);
-
-	trtmentGrpBox->setLayout(vbox);
+	trtmentGrpBox->setLayout(formLayout);
 
 	return trtmentGrpBox;
 }
 
 QGroupBox *Skeleton::createThirdGroupBox()
 {
-	pushBtnGrpBox = new QGroupBox(tr("Press any button"));
+	relapseGrpBox = new QGroupBox(tr("Relapse Parameters"));
 
-	_initialize = new QPushButton("Intialize", this);
-	_run = new QPushButton("Run", this);
-	_reset = new QPushButton("Reset", this);
-	_showStats = new QPushButton("Show Stats", this);
+	relapsePTSDxInput = new QLineEdit(tr("12.0"), relapseGrpBox);
+	relapsePTSDxInput->setValidator(new QDoubleValidator(0.0, 16.0, 4, relapseGrpBox));
 
-	_run->setDisabled(true);
-	_showStats->setDisabled(true);
+	relapseTimeInput = new QLineEdit(tr("13"), relapseGrpBox);
+	relapseTimeInput->setValidator(new QIntValidator(0, 104, relapseGrpBox));
 
-	QVBoxLayout *vbox = new QVBoxLayout;
-	vbox->addWidget(_initialize);
-	vbox->addWidget(_run);
-	vbox->addWidget(_reset);
-	vbox->addWidget(_showStats);
+	numRelapseInput = new QLineEdit(tr("1"), relapseGrpBox);
+	numRelapseInput->setValidator(new QIntValidator(0, 10, relapseGrpBox));
 
-	pushBtnGrpBox->setLayout(vbox);
+	//propRelapse = new QLineEdit(tr("0.15"), relapseGrpBox);
+	//propRelapse->setValidator(new QDoubleValidator(0, 1, 4, relapseGrpBox));
 
-	return pushBtnGrpBox;
+	QFormLayout *formLayout = new QFormLayout;
+	formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
+	formLayout->addRow("Relapse PTSDx ", relapsePTSDxInput);
+	formLayout->addRow("Relapse Time (Weeks) ", relapseTimeInput);
+	formLayout->addRow("Number of Relapse ", numRelapseInput);
+	//formLayout->addRow("Relapse Proportion ", propRelapse);
+
+	relapseGrpBox->setLayout(formLayout);
+
+	return relapseGrpBox;
 }
 
 QGroupBox *Skeleton::createFourthGroupBox()
 {
-	resourcesGrpBox = new QGroupBox(tr("Resources"));
+	pushBtnGrpBox = new QGroupBox(tr("Press any button"));
 
-	mealPerDay = new QLineEdit(tr("2"), this);
-	mealPerDay->setValidator(new QIntValidator(0, 4));
+	initializePb = new QPushButton("Intialize", pushBtnGrpBox);
+	runPb = new QPushButton("Run", pushBtnGrpBox);
+	resetPb = new QPushButton("Reset", pushBtnGrpBox);
+	showStatsPb = new QPushButton("Show Stats", pushBtnGrpBox);
 
-	durMealDist = new QLineEdit(tr("100"), this);
-	durMealDist->setValidator(new QIntValidator(0, 730));
+	runPb->setDisabled(true);
+	showStatsPb->setDisabled(true);
 
-	bronxMealServed = new QLineEdit(tr("2290"), this);
-	bronxMealServed->setValidator(new QIntValidator(0, 10000000, this));
-	bronxGrpBox = createResourcesSubGroupBox(resourcesGrpBox, bronxMealServed,"Bronx");
+	QHBoxLayout *hboxTop = new QHBoxLayout;
+	hboxTop->addWidget(initializePb);
+	hboxTop->addWidget(runPb);
 
-	brookMealServed = new QLineEdit(tr("27000"), this);
-	brookMealServed->setValidator(new QIntValidator(0, 10000000, this));
-	brookGrpBox = createResourcesSubGroupBox(resourcesGrpBox, brookMealServed, "Brooklyn");
+	/*QHBoxLayout *hboxBottom = new QHBoxLayout;
+	hboxBottom->addWidget(_reset);
+	hboxBottom->addWidget(_showStats);*/
 
-	manhMealServed = new QLineEdit(tr("5770"), this);
-	manhMealServed->setValidator(new QIntValidator(0, 10000000, this));
-	manhGrpBox = createResourcesSubGroupBox(resourcesGrpBox, manhMealServed, "Manhattan");
-
-	queensMealServed = new QLineEdit(tr("15000"), this);
-	queensMealServed->setValidator(new QIntValidator(0, 10000000, this));
-	queensGrpBox = createResourcesSubGroupBox(resourcesGrpBox, queensMealServed, "Queens");
-
-	statenMealServed = new QLineEdit(tr("3970"), this);
-	statenMealServed->setValidator(new QIntValidator(0, 10000000, this));
-	statenGrpBox = createResourcesSubGroupBox(resourcesGrpBox, statenMealServed, "Staten Island");
+	//QHBoxLayout *hboxBottom = new QHBoxLayout;
+	hboxTop->addWidget(resetPb);
+	hboxTop->addWidget(showStatsPb);
 
 	QFormLayout *formLayout = new QFormLayout;
-	formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-	formLayout->addRow("Number of meals/day", mealPerDay);
-	formLayout->addRow("Duration of meal distribution (days)", durMealDist);
-	formLayout->addRow(bronxGrpBox);
-	formLayout->addRow(brookGrpBox);
-	formLayout->addRow(manhGrpBox);
-	formLayout->addRow(queensGrpBox);
-	formLayout->addRow(statenGrpBox);
+	formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
+	formLayout->addRow(hboxTop);
+	//formLayout->addRow(hboxBottom);
+	
+	pushBtnGrpBox->setLayout(formLayout);
 
-	resourcesGrpBox->setLayout(formLayout);
-
-	return resourcesGrpBox;
+	return pushBtnGrpBox;	
 }
 
-QGroupBox *Skeleton::createTrtmentSubGroupBox(QGroupBox *grpBox, QComboBox *combo1, QComboBox *combo2, const QString boxTitle, const QString c1Label, QStringList c1Items , const QString c2Label, QStringList c2Items)
+
+QGroupBox *Skeleton::createTrtmentSubGroupBox(QGroupBox *grpBox, const QString boxTitle, const int flag)
 {
 	QGroupBox *subGrpBox = new QGroupBox(boxTitle, grpBox);
-	subGrpBox->setDisabled(true);
-
-	QFormLayout *formLayout = new QFormLayout;
-	formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-
-	//QComboBox *combo1 = new QComboBox;
-	combo1->addItems(c1Items);
-	formLayout->addRow(c1Label, combo1);
-
-	//QComboBox *combo2 = new QComboBox;
-	if(!c2Items.isEmpty() && combo2 != NULL)
+	
+	if(flag == 0)
 	{
-		combo2->addItems(c2Items);
-		formLayout->addRow(c2Label, combo2);
-	}
-	
-	QVBoxLayout *vbox = new QVBoxLayout;
-	vbox->addLayout(formLayout);
+		steppedCareCB = new QCheckBox(tr("Stepped Care"));
+		steppedCareCB->setChecked(true);
+		usualCareCB = new QCheckBox(tr("Usual Care"));
+		usualCareCB->setChecked(true);
 
-	subGrpBox->setLayout(vbox);
+		QHBoxLayout *hbox = new QHBoxLayout;
+		hbox->addWidget(steppedCareCB);
+		hbox->addWidget(usualCareCB);
+
+		subGrpBox->setLayout(hbox);
+	}
+	else if(flag == 1)
+	{
+		sensitivityInput = new QLineEdit(tr("0.8"), subGrpBox);
+		sensitivityInput->setValidator(new QDoubleValidator(0, 1, 4, subGrpBox));
+
+		specificityInput = new QLineEdit(tr("0.8"), subGrpBox);
+		specificityInput->setValidator(new QDoubleValidator(0, 1, 4, subGrpBox));
+
+		screenStartTimeInput = new QLineEdit(tr("4"), subGrpBox);
+		screenStartTimeInput->setValidator(new QIntValidator(0, 60, subGrpBox));
+
+		ptsdCutOffInput = new QLineEdit(tr("6.0"), subGrpBox);
+		ptsdCutOffInput->setValidator(new QDoubleValidator(0, 16, 4, subGrpBox));
+
+		QFormLayout *formLayout = new QFormLayout;
+		formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
+		formLayout->addRow("Sensitivity", sensitivityInput);
+		formLayout->addRow("Specificity", specificityInput);
+		formLayout->addRow("PTSD Screening Start Time (Weeks)" , screenStartTimeInput);
+		formLayout->addRow("PTSD Cut-off Threshold", ptsdCutOffInput);
+
+		subGrpBox->setLayout(formLayout);
+	}
+	else if(flag == 2)
+	{
+		trtmentTimeInput = new QLineEdit(tr("104"), subGrpBox);
+		trtmentTimeInput->setValidator(new QIntValidator(0, 2000, subGrpBox));
+
+		trtmentWaitTimeInput = new QLineEdit(tr("1"), subGrpBox);
+		trtmentWaitTimeInput->setValidator(new QIntValidator(0, 28, subGrpBox));
+
+		socialWorkerTimeInput = new QLineEdit(tr("4"), subGrpBox);
+		socialWorkerTimeInput->setValidator(new QIntValidator(0, 90, subGrpBox));
+
+		QFormLayout *formLayout = new QFormLayout;
+
+		formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
+
+		formLayout->addRow("Treatment Time (Weeks)", trtmentTimeInput);
+		formLayout->addRow("Treatment Wait Time (Weeks)", trtmentWaitTimeInput);
+		formLayout->addRow("Social Worker Service Time (Weeks)", socialWorkerTimeInput);
+
+		subGrpBox->setLayout(formLayout);
+	}
+	else if(flag == 3)
+	{
+		cbtResolutionCoffInput = new QLineEdit(tr("0.36"), subGrpBox);
+		cbtResolutionCoffInput->setValidator(new QDoubleValidator(0, 1, 4, subGrpBox));
+
+		sprResolutionCoffInput = new QLineEdit(tr("0.2"), subGrpBox);
+		sprResolutionCoffInput->setValidator(new QDoubleValidator(0, 1, 4, subGrpBox));
+
+		naturalDecayCoffInput = new QLineEdit(tr("0.14"), subGrpBox);
+		naturalDecayCoffInput->setValidator(new QDoubleValidator(0, 1, 4, subGrpBox));
+
+		QFormLayout *formLayout = new QFormLayout;
+
+		formLayout->setAlignment(Qt::AlignTop | Qt::AlignVCenter);
+		formLayout->addRow("CBT Resolution Coefficient", cbtResolutionCoffInput);
+		formLayout->addRow("SPR Resolution Coefficient", sprResolutionCoffInput);
+		formLayout->addRow("Natural Decay Coefficient", naturalDecayCoffInput);
+
+		subGrpBox->setLayout(formLayout);
+	}
+	else if(flag == 4)
+	{
+		QStringList costSteppedCare;
+		QStringList costUsualCare;
+
+		costSteppedCare << "60" << "120";
+		costUsualCare << "15" << "30";
+
+		costComboCBT = new QComboBox;
+		costComboSPR = new QComboBox;
+
+		costComboCBT->addItems(costSteppedCare);
+		costComboSPR->addItems(costUsualCare);
+
+		QFormLayout *formLayout = new QFormLayout;
+
+		formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		formLayout->addRow("CBT cost/session($)", costComboCBT);
+		formLayout->addRow("SPR cost/session($)", costComboSPR);
+
+		subGrpBox->setLayout(formLayout);
+
+	}
+	else if(flag == 5)
+	{
+		QStringList sessionsCBT;
+		QStringList sessionsSPR;
+
+		sessionsCBT << "8" << "12";
+		sessionsSPR << "5" << "8";
+
+		sessionComboCBT = new QComboBox;
+		sessionComboSPR = new QComboBox;
+
+		sessionComboCBT->addItems(sessionsCBT);
+		sessionComboSPR->addItems(sessionsSPR);
+
+		QFormLayout *formLayout = new QFormLayout;
+
+		formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+		formLayout->addRow("CBT sessions", sessionComboCBT);
+		formLayout->addRow("SPR sessions", sessionComboSPR);
+
+		subGrpBox->setLayout(formLayout);
+	}
 
 	return subGrpBox;
-	
 }
 
-QGroupBox *Skeleton::createResourcesSubGroupBox(QGroupBox *grpBox, QLineEdit *mealServed, const QString boxTitle)
+
+QCustomPlot *Skeleton::createPTSDPlot(const QString titleName)
 {
-	QGroupBox *subGrpBox = new QGroupBox(boxTitle, grpBox);
+	QMap <int, QString> ptsdMap;
+	ptsdMap.insert(0, "PTSD persistence(Stepped Care (SS))");
+	ptsdMap.insert(1, "PTSD persistence(Stepped Care (w/o SS))");
+	ptsdMap.insert(2, "PTSD persistence (Usual Care)");
+	ptsdMap.insert(3, "Cognitive Behavior Therapy");
+	ptsdMap.insert(4, "Skills for Psychological Recovery ");
+	ptsdMap.insert(5, "Natural Decay ");
 
-	QFormLayout *formLayout = new QFormLayout;
-	formLayout->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-	formLayout->addRow("Meals served/day", mealServed);
+	QCustomPlot *ptsdTrtmentPlot = new QCustomPlot;
+	ptsdTrtmentPlot->plotLayout()->insertRow(0);
+	//QCPTextElement *title = new QCPTextElement(ptsdTrtmentPlot, "PTSD persistance and treatment", QFont("sans", 12, QFont::Bold));
+	QCPTextElement *title = new QCPTextElement(ptsdTrtmentPlot, titleName, QFont("sans", 12, QFont::Bold));
+	ptsdTrtmentPlot->plotLayout()->addElement(0, 0, title);
 
-	subGrpBox->setLayout(formLayout);
+	for(int i = 0; i < NUM_PTSD_SUB_PLOTS; i++)
+	{
+		QPen solidPen;
+		solidPen.setColor(QColor(red[i], blue[i], green[i]));
+		solidPen.setWidth(3);
 
-	return subGrpBox;
+		ptsdTrtmentPlot->addGraph(); 
+		ptsdTrtmentPlot->graph(i)->setPen(solidPen);
+		ptsdTrtmentPlot->graph(i)->setName(ptsdMap[i]);
+	}
+
+	
+	ptsdTrtmentPlot->xAxis->setRange(0, numStepsInput->text().toInt() + 10);
+	ptsdTrtmentPlot->xAxis->grid()->setSubGridVisible(true);
+	ptsdTrtmentPlot->xAxis->setLabel("Simulation Time(Weeks)");
+	ptsdTrtmentPlot->xAxis->setLabelFont(QFont("sans", 10, QFont::Bold));
+
+	ptsdTrtmentPlot->yAxis->setRange(0, 110);
+	ptsdTrtmentPlot->yAxis->grid()->setSubGridVisible(true);
+	ptsdTrtmentPlot->yAxis->setLabel("Percentage(%)");
+	ptsdTrtmentPlot->yAxis->setLabelFont(QFont("sans", 10, QFont::Bold));
+	
+
+	ptsdTrtmentPlot->legend->setVisible(true);
+	ptsdTrtmentPlot->legend->setBorderPen(QPen(QColor(255, 255, 255, 0.4)));
+	ptsdTrtmentPlot->legend->setBrush(QColor(255, 255, 255, 0.4));
+	ptsdTrtmentPlot->legend->setFillOrder(QCPLegend::foRowsFirst);
+
+	return ptsdTrtmentPlot;
+}
+
+QCustomPlot *Skeleton::createStatePlot(const QString titleName)
+{
+	QMap <int, QString> stateMap;
+	stateMap.insert(EXCELLENT, "Excellent");
+	stateMap.insert(VERY_GOOD, "Very Good");
+	stateMap.insert(GOOD, "Good");
+	stateMap.insert(AVERAGE, "Average");
+	stateMap.insert(BELOW_AVERAGE, "Below Average");
+	stateMap.insert(POOR, "Poor");
+	stateMap.insert(VERY_POOR, "Very Poor");
+	stateMap.insert(WORST, "Worst");
+
+	QCustomPlot *statePlot = new QCustomPlot;
+	statePlot->plotLayout()->insertRow(0);
+	//QCPTextElement *title = new QCPTextElement(statePlot, "State transition of agents", QFont("sans", 12, QFont::Bold));
+	QCPTextElement *title = new QCPTextElement(statePlot, titleName, QFont("sans", 12, QFont::Bold));
+	statePlot->plotLayout()->addElement(0, 0, title);
+
+	int numBoro = numBoroInput->text().toInt();
+
+	for(unsigned int i = 0; i < NUM_STATE_SUB_PLOTS; i++)//numBoro; i++)
+	{
+		QPen solidPen;
+		solidPen.setColor(QColor(red[i], blue[i], green[i]));
+		solidPen.setWidth(2);
+
+		statePlot->addGraph();
+		statePlot->graph(i)->setPen(solidPen);
+		statePlot->graph(i)->setBrush(QColor(255, 255, 255, 0));
+		//statePlot->graph(i)->setLineStyle(QCPGraph::lsLine);
+		statePlot->graph(i)->setName(stateMap[i]);
+		//statePlot->graph(i)->setChannelFillGraph(0);
+	}
+
+	
+	statePlot->xAxis->setRange(0, numStepsInput->text().toInt());
+	statePlot->xAxis->grid()->setSubGridVisible(true);
+	statePlot->xAxis->setLabel("Simulation Time(Weeks)");
+	statePlot->xAxis->setLabelFont(QFont("sans", 10, QFont::Bold));
+
+	statePlot->yAxis->setRange(0, 15);//3);
+	statePlot->yAxis->grid()->setSubGridVisible(true);
+	statePlot->yAxis->setLabel("Percentage(%)");
+	statePlot->yAxis->setLabelFont(QFont("sans", 10, QFont::Bold));
+
+	statePlot->legend->setVisible(true);
+	statePlot->legend->setBorderPen(QPen(QColor(255, 255, 255, 0.4)));
+	statePlot->legend->setBrush(QColor(255, 255, 255, 0.4));
+	statePlot->legend->setFillOrder(QCPLegend::foRowsFirst);
+
+	return statePlot;
 }
 
 void Skeleton::initialize()
@@ -267,62 +449,18 @@ void Skeleton::initialize()
 		t = clock();
 		std::cout << "Calculating... " << std::endl;
 
-		_agentListFinal.clear();
-		_numAgents = numAgentsInput->text().toInt();
-		_numSteps = numStepsInput->text().toInt();
-		//_numTrials = inNumTrials;
+		agentListFinal.clear();
 
-		_numBoro = numBoroInput->text().toInt();
-		_ageCat = numAgeCatInput->text().toInt();
-		_raceCat = numRaceCatInput->text().toInt();
-		_incCat = numIncCatInput->text().toInt();
-		_subIncCat = numSubIncCatInput->text().toInt();
+		setInputParameters();
+		setTreatmentParameters();
+		setRelapseParameters();
 
-		_mealPerDay = mealPerDay->text().toInt();
-		_durMealDist = durMealDist->text().toInt();
-
-		_mealInventory[BRONX-1] = bronxMealServed->text().toInt() * _durMealDist; //Meal inventory for Bronx
-		_mealInventory[BROOKLYN-1] = brookMealServed->text().toInt() * _durMealDist; //Meal inventory for Brooklyn
-		_mealInventory[MANHATTAN-1] = manhMealServed->text().toInt() * _durMealDist; //Meal inventory for Manhattan
-		_mealInventory[QUEENS-1] = queensMealServed->text().toInt() * _durMealDist; //Meal inventory for Queens
-		_mealInventory[STATEN-1] = statenMealServed->text().toInt() * _durMealDist; //Meal inventory for Staten
-
-		for(unsigned int i = 0; i < _numBoro; i++){
-			_totalPplServed[i] = _mealInventory[i]/(_mealPerDay*_durMealDist);
-		}
-
-		if(steppedCareCB->isChecked())
-		{
-			_steppedCare = true;
-			_costCBTtrtment = costComboCBT->currentText().toInt();
-			_costSPRtrtment = costComboSPR->currentText().toInt();
-			_sessionCBT = sessionComboCBT->currentText().toInt();
-			_sessionSPR = sessionComboSPR->currentText().toInt();
-		}
-		else
-		{
-			_steppedCare = false;
-			_costCBTtrtment = 0;
-			_costSPRtrtment = 0;
-			_sessionCBT = 0;
-			_sessionSPR = 0;
-		}
-
-		if(usualCareCB->isChecked())
-		{
-			_usualCare = true;
-			_costSPR1trtment = costComboSPR1->currentText().toInt();
-			_sessionSPR1 = sessionComboSPR1->currentText().toInt();
-		}
-		else
-		{
-			_usualCare = false;
-			_costSPR1trtment = 0;
-			_sessionSPR1 = 0;
-		}
+		file = new FileHandling;
+		file->readInputFile();
 
 		createAgents();
 		createHousehold();
+		//createResources();
 
 		t = clock() - t;
 		std::cout << std::endl;
@@ -331,72 +469,93 @@ void Skeleton::initialize()
 
 		QMessageBox::information(this, tr("Success!"), tr("Agent's variables successfully initalized!"));
 		
-		_showStats->setDisabled(false);
-		_run->setDisabled(false);
-	
-
-		//agentStats();
-
+		showStatsPb->setDisabled(false);
+		runPb->setDisabled(false);
 	}
 
 }
 
 void Skeleton::run()
 {
-	//timeCounter = 0;
+	timeCounter = 0;
+	//int count = 0;
 
-	//customPlot = new QCustomPlot;
-	//customPlot->resize(1000, 400);
-	//customPlot->show();
+	//for(int i = 0; i < _numSteps; i++)
+	//{
+	//	int count = 0; int count2 = 0;
+	//	//boost::range::random_shuffle(_agentListFinal);
+	//	for(auto agent = _agentListFinal.begin(); agent != _agentListFinal.end(); ++agent)
+	//	{
+	//		agent->executeAgentRules(this, i);
+	//		if(agent->getIncomeDecline() == INCOME_LOSS_YES)
+	//		{
+	//			if(agent->getFinancialHelpType() == EXPEDITE) {count++;}
+	//			else if(agent->getFinancialHelpType() == NORMAL) {count2++;}
+	//		}
 
-	//customPlot->addGraph(); // blue line
-	//customPlot->graph(0)->setPen(QPen(QColor(40, 110, 255)));
-	//customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross,5));
-	//customPlot->xAxis->setRange(0, _numSteps+10);
-	//customPlot->yAxis->setRange(0, 7);
+	//		if(agent->getBorough() == BRONX && agent->getAvgHHIncome() < 80000 && i == _numSteps - 1 && agent->getLeftHome() == LEFT_HOME_YES && (agent->getIncomeDecline() == INCOME_LOSS_YES || agent->getIncomeDecline() == INCOME_LOSS_NO))
+	//		{
+	//				_testAgent.push_back(*agent);
+	//		}
+	//	}
 
-	
-	//connect(&dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()));
-	//dataTimer.start(0);
+	//	std::cout << i << "\t" << count << "\t" << count2 << std::endl;
+	//}
 
+	connect(&dataTimer, SIGNAL(timeout()), this, SLOT(realtimeDataSlot()));
+	dataTimer.start(0);
 
-	for(int i = 0; i < _numSteps; i++)
-	{
-		//boost::range::random_shuffle(_agentListFinal);
-		std::random_shuffle(_agentListFinal.begin(), _agentListFinal.end());
-		for(auto agent = _agentListFinal.begin(); agent != _agentListFinal.end(); ++agent)
-		{
-			agent->executeAgentRules(this);
-			if(agent->getBorough() == BRONX && agent->getAvgHHIncome() < 60000 && i == _numSteps - 1)
-			{
-				_testAgent.push_back(*agent);
-			}
-		}
-
-		std::cout << i << "\t" << _mealInventory[0] << "\t" << _mealInventory[1] << "\t" << _mealInventory[2]<< "\t" << _mealInventory[3] << "\t" << _mealInventory[4] << std::endl;
-		resetCounter();
-	}
-
-	_run->setDisabled(true);
+	runPb->setDisabled(true);
 }
 
 void Skeleton::reset()
 {
-	numAgentsInput->setText("100000");
-	numStepsInput->setText("730");
+	numAgentsInput->setText("1500000");
+	numStepsInput->setText("104");
+	
 	//numTrialsInput->setText("50");
 
-	mealPerDay->setText("2");
-	durMealDist->setText("100");
+	sensitivityInput->setText("0.8");
+	specificityInput->setText("0.8");
+	screenStartTimeInput->setText("14");
+	ptsdCutOffInput->setText("6.0");
 
-	bronxMealServed->setText("2290");
-	brookMealServed->setText("27000");
-	manhMealServed->setText("5770");
-	queensMealServed->setText("15000");
-	statenMealServed->setText("3970");
+	trtmentTimeInput->setText("104");
+	trtmentWaitTimeInput->setText("1");
+	socialWorkerTimeInput->setText("4");
 
-	_showStats->setDisabled(true);
-	_run->setDisabled(true);
+	cbtResolutionCoffInput->setText("0.36");
+	sprResolutionCoffInput->setText("0.2");
+	naturalDecayCoffInput->setText("0.14");
+
+	relapsePTSDxInput->setText("12.0");
+	relapseTimeInput->setText("13");
+	numRelapseInput->setText("1");
+
+
+	for(unsigned int i = 0; i < NUM_PTSD_PLOTS; i++)
+	{
+		for(unsigned int j = 0; j < NUM_PTSD_SUB_PLOTS; j++)
+		{
+
+			ptsdPlot[i]->graph(j)->data()->clear();
+		}
+	
+		ptsdPlot[i]->replot();
+	}
+
+	for(unsigned int i = 0; i < NUM_STATE_SUB_PLOTS; i++)
+	{
+		statePlot1->graph(i)->data()->clear();
+		statePlot2->graph(i)->data()->clear();
+	}
+
+	//statePlot->replot();
+	statePlot1->replot();
+	statePlot2->replot();
+
+	showStatsPb->setDisabled(true);
+	runPb->setDisabled(true);
 }
 
 void Skeleton::stats()
@@ -407,9 +566,9 @@ void Skeleton::stats()
 	QVBoxLayout *vbox = new QVBoxLayout(demoWidget);
 	QTextBrowser *statsViewer = new QTextBrowser(demoWidget);
 
-	Statistics *_stats = new Statistics(this, _agentListFinal, _numBoro, _ageCat, _raceCat, _incCat, _numAgents);
-	_stats->demographicStats();
-	QString outString = _stats->outString;
+	Statistics *stats = new Statistics(this, agentListFinal, numBoro, ageCat, raceCat, incCat, numAgents);
+	stats->demographicStats();
+	QString outString = stats->outString;
 	statsViewer->setPlainText(outString);
 
 	vbox->addWidget(statsViewer);
@@ -417,170 +576,398 @@ void Skeleton::stats()
 	demoWidget->resize(680,300);
 	demoWidget->show();
 
-	_showStats->setDisabled(true);
+	showStatsPb->setDisabled(true);
+
 
 }
 
-void Skeleton::enableGroupBoxSC(int state)
+
+void Skeleton::enableSubGroupBoxTrtment()
 {
-	if(state){
-		costGrpBoxSC->setDisabled(false);
-		sessionGrpBoxSC->setDisabled(false);
+	if(steppedCareCB->isChecked() && usualCareCB->isChecked() ||  steppedCareCB->isChecked() && !usualCareCB->isChecked())
+	{
+		sensitivityInput->setDisabled(false);
+		specificityInput->setDisabled(false);
+		screenStartTimeInput->setDisabled(false);
+		ptsdCutOffInput->setDisabled(false);
+
+		trtmentTimeInput->setDisabled(false);
+		trtmentWaitTimeInput->setDisabled(false);
+		socialWorkerTimeInput->setDisabled(false);
+
+		cbtResolutionCoffInput->setDisabled(false);
+		sprResolutionCoffInput->setDisabled(false);
+		naturalDecayCoffInput->setDisabled(false);
+
+		costComboCBT->setDisabled(false);
+		costComboSPR->setDisabled(false);
+
+		sessionComboCBT->setDisabled(false);
+		sessionComboSPR->setDisabled(false);
 	}
-	else{
-		costGrpBoxSC->setDisabled(true);
-		sessionGrpBoxSC->setDisabled(true);
+	else if(!steppedCareCB->isChecked() && usualCareCB->isChecked())
+	{
+		sensitivityInput->setDisabled(true);
+		specificityInput->setDisabled(true);
+		screenStartTimeInput->setDisabled(false);
+		ptsdCutOffInput->setDisabled(false);
+
+		trtmentTimeInput->setDisabled(false);
+		trtmentWaitTimeInput->setDisabled(false);
+		socialWorkerTimeInput->setDisabled(true);
+
+		cbtResolutionCoffInput->setDisabled(true);
+		sprResolutionCoffInput->setDisabled(false);
+		naturalDecayCoffInput->setDisabled(false);
+
+		costComboCBT->setDisabled(false);
+		costComboSPR->setDisabled(false);
+
+		costComboCBT->setDisabled(true);
+		costComboSPR->setDisabled(false);
+
+		sessionComboCBT->setDisabled(true);
+		sessionComboSPR->setDisabled(false);
+	}
+	else
+	{
+		sensitivityInput->setDisabled(true);
+		specificityInput->setDisabled(true);
+		screenStartTimeInput->setDisabled(true);
+		ptsdCutOffInput->setDisabled(false);
+
+		trtmentTimeInput->setDisabled(true);
+		trtmentWaitTimeInput->setDisabled(true);
+		socialWorkerTimeInput->setDisabled(true);
+
+		cbtResolutionCoffInput->setDisabled(true);
+		sprResolutionCoffInput->setDisabled(true);
+		naturalDecayCoffInput->setDisabled(false);
+
+		costComboCBT->setDisabled(true);
+		costComboSPR->setDisabled(true);
+
+		sessionComboCBT->setDisabled(true);
+		sessionComboSPR->setDisabled(true);
 	}
 }
 
-void Skeleton::enableGroupBoxUC(int state)
-{
-	if(state){
-		costGrpBoxUC->setDisabled(false);
-		sessionGrpBoxUC->setDisabled(false);	
-	}
-	else{
-		costGrpBoxUC->setDisabled(true);
-		sessionGrpBoxUC->setDisabled(true);
-	}
-}
 
 void Skeleton::realtimeDataSlot()
 {
-	int countPTSD = 0;
+	countCBT = boost::assign::list_of(0)(0);
+	countSPR = boost::assign::list_of(0)(0);
+	countND = boost::assign::list_of(0)(0);
 
-	if(timeCounter < _numSteps)
+	countExpedite = 0;
+	countNormal = 0;
+	countNormalNoSW = 0;
+	countNormalUC = 0;
+
+	if(timeCounter < numSteps)
 	{
-		//boost::range::random_shuffle(_agentListFinal);
-		std::random_shuffle(_agentListFinal.begin(), _agentListFinal.end());
-		for(auto agent = _agentListFinal.begin(); agent != _agentListFinal.end(); ++agent)
+		//boost::range::random_shuffle(agentListFinal);
+		for(auto agent = agentListFinal.begin(); agent != agentListFinal.end(); ++agent)
 		{
-			//agent->executeAgentRules(this);
-			float PTSDx = agent->getPTSDsymptom();
-			if(PTSDx > 6.0)
-			{
-				countPTSD++;
-			}
+			agent->executeAgentRules(timeCounter);
 
-			if(agent->getBorough() == BRONX && agent->getAvgHHIncome() < 60000)
-			{
-				_testAgent.push_back(*agent);
-			}
 		}
 
-		float perPTSD = (float)countPTSD/_numAgents;
-		//std::cout << timeCounter << "\t" << perPTSD << "\t" << _agentListFinal.size() << std::endl;
-
-		customPlot->graph(0)->addData(timeCounter, 100*perPTSD);
-
-		std::cout << timeCounter << "\t" << _mealInventoryBronx << std::endl;
+		updatePlots();
 	}
 	else
 	{
 		dataTimer.stop();
 	}
 
-	customPlot->replot();
+	for(unsigned int i = 0; i < NUM_PTSD_PLOTS; i++)
+	{
+		ptsdPlot[i]->replot();
+	}
+
+	statePlot1->replot();
+	statePlot2->replot();
 	timeCounter++;
 }
 
+void Skeleton::setInputParameters()
+{
+	numAgents = numAgentsInput->text().toInt();
+	numSteps = numStepsInput->text().toInt();
+	//_numTrials = inNumTrials;
+
+	numBoro = numBoroInput->text().toInt();
+	ageCat = numAgeCatInput->text().toInt();
+	raceCat = numRaceCatInput->text().toInt();
+	incCat = numIncCatInput->text().toInt();
+	subIncCat = numSubIncCatInput->text().toInt();
+
+	//potency = boost::assign::list_of(1.0)(0.92)(0.84)(0.76);
+	potency = boost::assign::list_of(1.0)(0.90)(0.80)(0.70);
+	//potency = boost::assign::list_of(1.0)(0.8)(0.6)(0.4);
+
+	for(unsigned int i = 0; i < NUM_PTSD_PLOTS; i++)
+	{
+		ptsdPlot[i]->xAxis->setRange(0, numSteps+10);
+		ptsdPlot[i]->replot();
+	}
+
+	statePlot1->xAxis->setRange(0, numSteps+10);
+	statePlot1->replot();
+
+	statePlot2->xAxis->setRange(0, numSteps+10);
+	statePlot2->replot();
+
+	/*for(unsigned int i = 0; i < NUM_PLOTS_PTSD_TRTMENT; i++)
+	{
+		if(ptsdTrtmentPlot->graph(i)->data()->isEmpty() == false)
+		{
+			ptsdTrtmentPlot->graph(i)->data()->clear();
+		}
+	}*/
+
+	//ptsdTrtmentPlot->xAxis->setRange(0, numSteps+10);
+	//ptsdTrtmentPlot->replot();
+
+	/*for(unsigned int i = 0; i < NUM_PLOTS_STATE; i++)
+	{
+		if(statePlot->graph(i)->data()->isEmpty() == false)
+		{
+			statePlot->graph(i)->data()->clear();
+		}
+	}*/
+
+	//statePlot->xAxis->setRange(0, numSteps+10);
+	//statePlot->replot();
+}
+
+
+void Skeleton::setTreatmentParameters()
+{
+	if(steppedCareCB->isChecked() && usualCareCB->isChecked() || steppedCareCB->isChecked() && !usualCareCB->isChecked())
+	{
+		steppedCare = true;
+		usualCare = (usualCareCB->isChecked()) ? true : false;
+
+		sensitivity = sensitivityInput->text().toFloat();
+		specificity = specificityInput->text().toFloat();
+		ptsdScreeningTime = screenStartTimeInput->text().toInt();
+		ptsdxCutoff = ptsdCutOffInput->text().toFloat();
+
+		trtmentTime = trtmentTimeInput->text().toInt();
+		trtmentWaitTime = trtmentWaitTimeInput->text().toInt();
+		socialWorkerTime = socialWorkerTimeInput->text().toInt();
+
+		cbtCoeff = cbtResolutionCoffInput->text().toFloat();
+		sprCoeff = sprResolutionCoffInput->text().toFloat();
+		natDecayCoeff = naturalDecayCoffInput->text().toFloat();
+
+		costCBTtrtment = costComboCBT->currentText().toInt();
+		maxSessionsCBT = sessionComboCBT->currentText().toInt();
+
+		costSPRtrtment = costComboSPR->currentText().toInt();
+		maxSessionsSPR = sessionComboSPR->currentText().toInt();
+	}
+
+	else if(!steppedCareCB->isChecked() && usualCareCB->isChecked())
+	{
+		steppedCare = false;
+		usualCare = true;
+
+		sensitivity = 0.f;
+		specificity = 0.f;
+		ptsdScreeningTime = screenStartTimeInput->text().toInt();
+		ptsdxCutoff = ptsdCutOffInput->text().toFloat();
+
+		trtmentTime = trtmentTimeInput->text().toInt();
+		trtmentWaitTime = trtmentWaitTimeInput->text().toInt();
+		socialWorkerTime = 0;
+
+		cbtCoeff = 0;
+		sprCoeff = sprResolutionCoffInput->text().toFloat();
+		natDecayCoeff = naturalDecayCoffInput->text().toFloat();
+
+		costCBTtrtment = 0;
+		maxSessionsCBT = 0;
+
+		costSPRtrtment = costComboSPR->currentText().toInt();
+		maxSessionsSPR = sessionComboSPR->currentText().toInt();
+	}
+	else
+	{
+		steppedCare = false;
+		usualCare = false;
+
+		sensitivity = 0.f;
+		specificity = 0.f;
+		ptsdScreeningTime = 0;
+		ptsdxCutoff = ptsdCutOffInput->text().toFloat();
+
+		trtmentTime = 0;
+		trtmentWaitTime = 0;
+		socialWorkerTime = 0;
+
+		cbtCoeff = 0;
+		sprCoeff = 0;
+		natDecayCoeff = naturalDecayCoffInput->text().toFloat();
+
+		costCBTtrtment = 0;
+		maxSessionsCBT = 0;
+
+		costSPRtrtment = 0;
+		maxSessionsSPR = 0;
+	}
+}
+
+void Skeleton::setRelapseParameters()
+{
+	relapsePTSDx = relapsePTSDxInput->text().toFloat();
+	relapseTime = relapseTimeInput->text().toInt();
+	numRelapse = numRelapseInput->text().toInt();
+}
 
 void Skeleton::createAgents()
 {
-	FileHandling *file = new FileHandling();
-	file->readInputFile();
-
-	_famList.clear();
-	int famIdx = 0;
-
-	for(int i = 0; i < _numAgents; i++)
+	unsigned int famIdx = 0;
+	Agent *myAgent = new Agent(this, file);
+	for(unsigned int i = 0; i < numAgents; i++)
 	{
-		Agent *myAgent = new Agent(file);
 		myAgent->setAgentAttributes(i);
 
 		if(myAgent->getHHsize() == HHsize1){createHHSize1(myAgent, famIdx);}  //add agents with HHsize 1 to the familyList}
-		else{_tempAgentsMap.insert(std::pair<int, Agent> (myAgent->getKey(), *myAgent));} //creates hashtable for HHsize 2 or more 
+		else{tempAgentsMap.insert(std::pair<int, Agent> (myAgent->getKey(), *myAgent));} //creates hashtable for HHsize 2 or more 
 	}
 
 }
 
 void Skeleton::createHousehold()
 {
-	_famListHHsize2.clear();
+	//famListHHsize2.clear();
 
-	int famIdx = _famList.size()+1;
+	unsigned int famIdx = famList.size()+1;
 
 	createHHSize234Step1(famIdx); 
 	createHHSize234Step2(famIdx); 
 	mergeHouseholds();
 
-	FileHandling *file = new FileHandling();
+	agentListFinal.reserve(numAgents);
 
-	file->readExpenseFile();
-	file->readSandyDamageFile();
-
-	for(auto f = _famList.begin(); f != _famList.end(); ++f)
+	for(auto f = famList.begin(); f != famList.end(); ++f)
 	{
 		f->calcAverageFamilyIncome();
 		f->calcAverageFamilySaving(file);
 		f->predictSandyDamage(file);
 
-		for(auto agent = f->_agentFamList.begin(); agent != f->_agentFamList.end(); ++agent)
+		for(auto agent = f->agentFamList.begin(); agent != f->agentFamList.end(); ++agent)
 		{
-			_agentListFinal.push_back(*agent);
+			agentListFinal.push_back(*agent);
+		}
+
+	}
+
+	/*for(unsigned int i = 0; i < numBoro; i++)
+	{
+		int countIncomeLoss = std::count_if(agentListFinal.begin(), agentListFinal.end(), Check_IncomeLoss(i+1, INCOME_LOSS_YES));
+		int boroPop = std::count_if(agentListFinal.begin(), agentListFinal.end(), Check_Borough(i+1));
+		std::cout << "% of Income Loss in population in Borough " << i+1 << "\t"  << (float)countIncomeLoss/boroPop << std::endl;
+	}
+
+	std::cout << std::endl;*/
+
+	std::ofstream myfile;
+	myfile.open("validation_proportions.txt", std::ios::app);
+
+	for(int i = INCOME_LOSS_NO; i < INCOME_LOSS_YES+1; i++)
+	{
+		for(int j = MALE; j < FEMALE+1; j++)
+		{
+			for(int k = AGE1; k < AGE3+1; k++)
+			{
+				int countSP1 = boost::count_if(agentListFinal, Check_IncDecline_Gender_Age(i, j, k));
+				int countSP11 = boost::count_if(agentListFinal, Check_IncDecline_Gender_Age_PTSD(i, j, k, POSITIVE));
+
+				std::cout << i << "\t" << j << "\t" << k << "\t" << (float)countSP11/countSP1 << std::endl;
+				myfile << i << "\t" << j << "\t" << k << "\t" << (float)countSP11/countSP1 << std::endl;
+			}
 		}
 	}
 
+	std::cout << std::endl;
+	myfile << std::endl;
+
+	for(int i = LEFT_HOME_NO; i < LEFT_HOME_YES+1; i++)
+	{
+		for(int j = MALE; j < FEMALE+1; j++)
+		{
+			for(int k = AGE1; k < AGE3+1; k++)
+			{
+				int countSP1 = boost::count_if(agentListFinal, Check_LeftHome_Gender_Age(i, j, k));
+				int countSP11 = boost::count_if(agentListFinal, Check_LeftHome_Gender_Age_PTSD(i, j, k, POSITIVE));
+
+				myfile << i << "\t" << j << "\t" << k << "\t" << (float)countSP11/countSP1 << std::endl;
+				std::cout << i << "\t" << j << "\t" << k << "\t" << (float)countSP11/countSP1 << std::endl;
+			}
+		}
+	}
+
+	myfile.close();
+
+	famListHHsize2.clear();
+	famList.clear();
+	
 }
 
 
 void Skeleton::mergeHouseholds()
 {
-	for(auto f1 = _famListHHsize2.begin(); f1 != _famListHHsize2.end(); ++f1)
+	for(auto f1 = famListHHsize2.begin(); f1 != famListHHsize2.end(); ++f1)
 	{
-		_famList.push_back(*f1);
+		famList.push_back(*f1);
 	}
+
+	//famListHHsize2.clear();
 }
 
 
-void Skeleton::createHHSize1(Agent *agent, int &index)
+void Skeleton::createHHSize1(Agent *agent, unsigned int &index)
 {
 	index++;
 	Family hhSize1(index);
 	hhSize1.setFamilyAttributes(*agent);
 	hhSize1.addAgent(*agent);
-	_famList.push_back(hhSize1);
+	famList.push_back(hhSize1);
 
 }
 
-void Skeleton::createHHSize234Step1(int &index)
+
+void Skeleton::createHHSize234Step1(unsigned int &index)
 {
-	for(auto agent1 = _tempAgentsMap.begin(); agent1 != _tempAgentsMap.end();)
+	for(auto agent1 = tempAgentsMap.begin(); agent1 != tempAgentsMap.end();)
 	{
 		Family hhSize234(index++);
 		hhSize234.setFamilyAttributes(agent1->second);
 		hhSize234.addAgent(agent1->second);
 
-		auto its = _tempAgentsMap.equal_range(agent1->first);
+		auto its = tempAgentsMap.equal_range(agent1->first);
 		for(auto agent2 = its.first; agent2 != its.second;)
 		{
 			if(agent1->second.getID() != agent2->second.getID())
 			{
-				if(agent1->second.getRace() == agent2->second.getRace() && hhSize234._agentFamList.size() < agent1->second.getHHsize())
+				if(agent1->second.getRace() == agent2->second.getRace() && hhSize234.agentFamList.size() < agent1->second.getHHsize())
 				{
 					hhSize234.addAgent(agent2->second);
-					agent2 = _tempAgentsMap.erase(agent2);
-					if(hhSize234._agentFamList.size() == agent1->second.getHHsize()){break;}
+					agent2 = tempAgentsMap.erase(agent2);
+					if(hhSize234.agentFamList.size() == agent1->second.getHHsize()){break;}
 				}
 				else{++agent2;}
 			}
 			else{++agent2;}
 		}
 
-		if(hhSize234._agentFamList.size() > HHsize1 && hhSize234._agentFamList.size() <= agent1->second.getHHsize())
+		if(hhSize234.agentFamList.size() > HHsize1 && hhSize234.agentFamList.size() <= agent1->second.getHHsize())
 		{
-			_famListHHsize2.push_back(hhSize234);
-			agent1 = _tempAgentsMap.erase(agent1);
+			famListHHsize2.push_back(hhSize234);
+			agent1 = tempAgentsMap.erase(agent1);
 		}
 		else{++agent1;}
 	}
@@ -589,34 +976,34 @@ void Skeleton::createHHSize234Step1(int &index)
 }
 
 
-void Skeleton::createHHSize234Step2(int &index)
+void Skeleton::createHHSize234Step2(unsigned int &index)
 {
-	for(auto agent1 = _tempAgentsMap.begin(); agent1 != _tempAgentsMap.end();)
+	for(auto agent1 = tempAgentsMap.begin(); agent1 != tempAgentsMap.end();)
 	{
 		Family hhSize234(index++);
 		hhSize234.setFamilyAttributes(agent1->second);
 		hhSize234.addAgent(agent1->second);
 
-		auto its = _tempAgentsMap.equal_range(agent1->first);
+		auto its = tempAgentsMap.equal_range(agent1->first);
 		for(auto agent2 = its.first; agent2 != its.second;)
 		{
 			if(agent1->second.getID() != agent2->second.getID())
 			{
-				if(hhSize234._agentFamList.size() < agent1->second.getHHsize())
+				if(hhSize234.agentFamList.size() < agent1->second.getHHsize())
 				{
 					hhSize234.addAgent(agent2->second);
-					agent2 = _tempAgentsMap.erase(agent2);
-					if(hhSize234._agentFamList.size() == agent1->second.getHHsize()){break;}
+					agent2 = tempAgentsMap.erase(agent2);
+					if(hhSize234.agentFamList.size() == agent1->second.getHHsize()){break;}
 				}
 				else{++agent2;}
 			}
 			else{++agent2;}
 		}
 
-		if(hhSize234._agentFamList.size() > HHsize1 && hhSize234._agentFamList.size() <= agent1->second.getHHsize())
+		if(hhSize234.agentFamList.size() > HHsize1 && hhSize234.agentFamList.size() <= agent1->second.getHHsize())
 		{
-			_famListHHsize2.push_back(hhSize234);
-			agent1 = _tempAgentsMap.erase(agent1);
+			famListHHsize2.push_back(hhSize234);
+			agent1 = tempAgentsMap.erase(agent1);
 		}
 		else{++agent1;}
 	}
@@ -627,22 +1014,22 @@ void Skeleton::createHHSize234Step2(int &index)
 
 void Skeleton::fillIncompleteHouseholds()
 {
-	for(auto f1 = _famListHHsize2.begin(); f1 !=_famListHHsize2.end();++f1)
+	for(auto f1 = famListHHsize2.begin(); f1 != famListHHsize2.end();++f1)
 	{
-		if((f1->getFamilySize() != f1->_agentFamList.size() || f1->getFamilySize() == HHsize4) && f1->getFamilySize() > HHsize2)
+		if((f1->getFamilySize() != f1->agentFamList.size() || f1->getFamilySize() == HHsize4) && f1->getFamilySize() > HHsize2)
 		{
-			auto its = _tempAgentsMap.equal_range(f1->getFamilyKey());
+			auto its = tempAgentsMap.equal_range(f1->getFamilyKey());
 			for(auto agent = its.first; agent != its.second;)
 			{
-				if(f1->getFamilySize() == HHsize3 && f1->_agentFamList.size() < HHsize3)
+				if(f1->getFamilySize() == HHsize3 && f1->agentFamList.size() < HHsize3)
 				{
 					f1->addAgent(agent->second);
-					agent = _tempAgentsMap.erase(agent);
+					agent = tempAgentsMap.erase(agent);
 				}
-				else if(f1->getFamilySize() == HHsize4 && f1->_agentFamList.size() < MAX_PEOPLE_HHSIZE4)
+				else if(f1->getFamilySize() == HHsize4 && f1->agentFamList.size() < MAX_PEOPLE_HHSIZE4)
 				{
 					f1->addAgent(agent->second);
-					agent = _tempAgentsMap.erase(agent);
+					agent = tempAgentsMap.erase(agent);
 				}
 				else{++agent;}
 			}
@@ -650,27 +1037,92 @@ void Skeleton::fillIncompleteHouseholds()
 	}
 }
 
-void Skeleton::addUnmatchedAgents(int &index)
+void Skeleton::addUnmatchedAgents(unsigned int &index)
 {
-	for(auto agent = _tempAgentsMap.begin(); agent !=_tempAgentsMap.end(); ++agent)
+	for(auto agent = tempAgentsMap.begin(); agent !=tempAgentsMap.end(); ++agent)
 	{
 		index++;
 
 		Family remFamily(index);
 		remFamily.setFamilyAttributes(agent->second);
 		remFamily.addAgent(agent->second);
-		_famListHHsize2.push_back(remFamily);
+		famListHHsize2.push_back(remFamily);
 	}
 
-	_tempAgentsMap.clear();
+	tempAgentsMap.clear();
 }
 
-void Skeleton::resetCounter()
+void Skeleton::updatePlots()
 {
-	for(unsigned int i = 0; i < _numBoro; i++){
-		_countPplServed[i] = 0;
+	for(unsigned int incLoss = INCOME_LOSS_NO; incLoss < INCOME_LOSS_YES+1; incLoss++)
+	{
+		int ptsdCountSC = boost::range::count_if(agentListFinal, Check_PTSDx_SC(incLoss));
+		int ptsdResolvedCountSC = boost::range::count_if(agentListFinal, Check_Resolved_PTSD_SC(incLoss));
+
+		int ptsdCountSCNoSW = boost::range::count_if(agentListFinal, Check_PTSDx_SC_NO_SW(incLoss));
+		int ptsdResolvedCountSCNoSW = boost::range::count_if(agentListFinal, Check_Resolved_PTSD_SC_NO_SW(incLoss));
+
+		int ptsdCountUC = boost::range::count_if(agentListFinal, Check_PTSDx_UC(incLoss));
+		int ptsdResolvedCountUC = boost::range::count_if(agentListFinal, Check_Resolved_PTSD_UC(incLoss));
+
+		ptsdPlot[incLoss-1]->graph(0)->addData(timeCounter, 100*((float)ptsdCountSC/(ptsdCountSC + ptsdResolvedCountSC)));
+		ptsdPlot[incLoss-1]->graph(1)->addData(timeCounter, 100*((float)ptsdCountSCNoSW/(ptsdCountSCNoSW + ptsdResolvedCountSCNoSW)));
+		ptsdPlot[incLoss-1]->graph(2)->addData(timeCounter, 100*((float)ptsdCountUC/(ptsdCountUC + ptsdResolvedCountUC)));
+		ptsdPlot[incLoss-1]->graph(3)->addData(timeCounter, 100*((float)countCBT[incLoss-1]/ptsdCountSC));
+		ptsdPlot[incLoss-1]->graph(4)->addData(timeCounter, 100*((float)countSPR[incLoss-1]/ptsdCountSC));
+		ptsdPlot[incLoss-1]->graph(5)->addData(timeCounter, 100*((float)countND[incLoss-1]/ptsdCountSC));
+	}
+
+		/*int ptsdCountSC = 0;
+		int ptsdResolvedCountSC = 0;
+
+		int ptsdCountSCNoSW = 0;
+		int ptsdResolvedCountSCNoSW = 0;
+
+		int ptsdCountUC = 0;
+		int ptsdResolvedCountUC = 0;
+
+		int totCBT = 0, totSPR = 0, totND = 0;
+
+	for(unsigned int incLoss = INCOME_LOSS_NO; incLoss < INCOME_LOSS_YES+1; incLoss++)
+	{
+		ptsdCountSC += boost::range::count_if(agentListFinal, Check_PTSDx_SC(incLoss));
+		ptsdResolvedCountSC += boost::range::count_if(agentListFinal, Check_Resolved_PTSD_SC(incLoss));
+
+		ptsdCountSCNoSW += boost::range::count_if(agentListFinal, Check_PTSDx_SC_NO_SW(incLoss));
+		ptsdResolvedCountSCNoSW += boost::range::count_if(agentListFinal, Check_Resolved_PTSD_SC_NO_SW(incLoss));
+
+		ptsdCountUC += boost::range::count_if(agentListFinal, Check_PTSDx_UC(incLoss));
+		ptsdResolvedCountUC += boost::range::count_if(agentListFinal, Check_Resolved_PTSD_UC(incLoss));
+
+	}
+
+	ptsdPlot[0]->graph(0)->addData(timeCounter, 100*((float)ptsdCountSC/(ptsdCountSC + ptsdResolvedCountSC)));
+	ptsdPlot[0]->graph(1)->addData(timeCounter, 100*((float)ptsdCountSCNoSW/(ptsdCountSCNoSW + ptsdResolvedCountSCNoSW)));
+	ptsdPlot[0]->graph(2)->addData(timeCounter, 100*((float)ptsdCountUC/(ptsdCountUC + ptsdResolvedCountUC)));
+	ptsdPlot[0]->graph(3)->addData(timeCounter, 100*((float)totCBT/(ptsdCountSC+ptsdCountSCNoSW)));
+	ptsdPlot[0]->graph(4)->addData(timeCounter, 100*((float)totSPR/(ptsdCountSC+ptsdCountSCNoSW)));
+	ptsdPlot[0]->graph(5)->addData(timeCounter, 100*((float)totND/(ptsdCountSC+ptsdCountSCNoSW)));*/
+
+	std::cout << timeCounter << "\t" << countExpedite << "\t" << countNormal << "\t" << countNormalNoSW << "\t" << countNormalUC << std::endl;
+
+	//boost::container::vector<int> stateCountSC(NUM_STATE_SUB_PLOTS, 0);
+	//boost::container::vector<int> stateCountUC(NUM_STATE_SUB_PLOTS, 0);
+
+	boost::array<unsigned int, NUM_STATE_SUB_PLOTS> stateCountSC = {0, 0, 0, 0, 0, 0, 0, 0};
+	boost::array<unsigned int, NUM_STATE_SUB_PLOTS> stateCountUC = {0, 0, 0, 0, 0, 0, 0, 8};
+	
+	for(unsigned int i = 0; i < NUM_STATE_SUB_PLOTS; i++)
+	{
+		stateCountSC[i] = boost::range::count_if(agentListFinal, Check_State_SC(i));
+		//stateCountSC[i] = boost::range::count_if(agentListFinal, Check_State_SC_NoSW(i));
+		stateCountUC[i] = boost::range::count_if(agentListFinal, Check_State_UC(i));
+		
+		statePlot1->graph(i)->addData(timeCounter, 100*((float)stateCountSC[i]/numAgents));
+		statePlot2->graph(i)->addData(timeCounter, 100*((float)stateCountUC[i]/numAgents));
 	}
 }
+
 
 
 
