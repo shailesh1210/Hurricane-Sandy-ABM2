@@ -12,9 +12,12 @@ public:
 	virtual ~FileHandling();
 
 	void readInputFile();
+	
+protected:
 	void readSandyDamageFile();
 	void readExpenseFile();
-protected:
+
+	void readBoroughFileNYC();
 	void readDemoFileNYC();
 	void readHHsizeFileNYC();
 	void readIncomeFileNYC();
@@ -22,10 +25,11 @@ protected:
 	void readSandyDamagePredictorFileNYC();
 	void readSandyFinancialLossFileNYC();
 	void readSandyPTSDFileNYC();
+	void readSandyFinancialReimbursementFileNYC();
 	
 public:
 
-	DemoVector _newYork;
+	//DemoVector newYork;
 
 	/*HouseholdVector _newYorkHHsize;
 	IncomeVector _newYorkIncome;
@@ -36,12 +40,16 @@ public:
 	//SandyFinLossVector _newYorkSandyFinLoss;
 	//SandyPTSDvector _newYorkSandyPTSD;
 
-	HouseHoldMap _newYorkHHmap;
-	IncomeMap _newYorkIncMap;
-	SubIncomeMap _newYorkSubIncMap;
-	ExpenseMap _newYorkExpenseMap;
-	SandyDamageMap _newYorkSandyDamageMap;
-	SandyFinLossMap _newYorkSandyFinLossMap;
-	SandyPTSDMap _newYorkSandyPTSDMap;
+	BoroughVector newYorkBoro;
+	DemographMap newYorkMap;
+	HouseHoldMap newYorkHHmap;
+	IncomeMap newYorkIncMap;
+	SubIncomeMap newYorkSubIncMap;
+	ExpenseMap newYorkExpenseMap;
+	SandyDamageMap newYorkSandyDamageMap;
+	SandyFinLossMap newYorkSandyFinLossMap;
+	SandyPTSDstatusMap newYorkSandyPTSDMap;
+	SandyPTSDxMap newYorkSandyPTSDsympMap;
+	SandyFinReimburseMap newYorkSandyFinReimburseMap;
 };
 #endif __FileHandling_h__

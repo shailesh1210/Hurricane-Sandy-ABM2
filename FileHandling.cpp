@@ -15,11 +15,15 @@ FileHandling::~FileHandling()
 
 void FileHandling::readInputFile()
 {
+	readBoroughFileNYC();
 	readDemoFileNYC();
 	readHHsizeFileNYC();
 	readIncomeFileNYC();
 	readSubIncomeFileNYC();
-	
+
+	readExpenseFile();
+	readSandyDamageFile();
+	readSandyFinancialReimbursementFileNYC();
 }
 
 void FileHandling::readSandyDamageFile()
@@ -43,7 +47,22 @@ void FileHandling::readExpenseFile()
 		ifs >> nyc.ratioExpenseInc;
 
 		//_newYorkExpense.push_back(nyc);
-		_newYorkExpenseMap.insert(std::pair<int, Expense>(nyc.inHHsize, nyc));
+		newYorkExpenseMap.insert(std::pair<unsigned short int, Expense>(nyc.inHHsize, nyc));
+	}
+}
+
+void FileHandling::readBoroughFileNYC()
+{
+	std::string file = "input\\demo\\borough_NYC.txt";
+	std::ifstream ifs(file.c_str(), std::ios::in);
+
+	while(!ifs.eof())
+	{
+		Borough nyc;
+		ifs >> nyc.pBorough;
+		ifs >> nyc.inBorough;
+
+		newYorkBoro.push_back(nyc);
 	}
 }
 
@@ -61,7 +80,8 @@ void FileHandling::readDemoFileNYC()
 		ifs >> nyc.inGender;
 		ifs >> nyc.inAge;
 
-		_newYork.push_back(nyc);
+		//newYork.push_back(nyc);
+		newYorkMap.insert(std::pair<unsigned short int, Demographics>(nyc.inBorough, nyc));
 	}
 }
 
@@ -78,7 +98,7 @@ void FileHandling::readHHsizeFileNYC()
 		ifs >> nyc.inBoro;
 
 		//_newYorkHHsize.push_back(nyc);
-		_newYorkHHmap.insert(std::pair<int, Household> (nyc.inBoro, nyc));
+		newYorkHHmap.insert(std::pair<unsigned short int, Household> (nyc.inBoro, nyc));
 	}
 }
 
@@ -97,8 +117,8 @@ void FileHandling::readIncomeFileNYC()
 
 		//_newYorkIncome.push_back(nyc);
 
-		int incKey = 10*nyc.inHHsize + nyc.inBoro;
-		_newYorkIncMap.insert(std::pair<int, Income>(incKey, nyc));
+		unsigned short int incKey = 10*nyc.inHHsize + nyc.inBoro;
+		newYorkIncMap.insert(std::pair<unsigned short int, Income>(incKey, nyc));
 	}
 }
 
@@ -119,8 +139,8 @@ void FileHandling::readSubIncomeFileNYC()
 
 		//_newYorkIncDiv.push_back(nyc);
 
-		int subIncKey = 10*nyc.inIncome + nyc.inBoro;
-		_newYorkSubIncMap.insert(std::pair<int, SubIncome>(subIncKey, nyc));
+		unsigned short int subIncKey = 10*nyc.inIncome + nyc.inBoro;
+		newYorkSubIncMap.insert(std::pair<unsigned short int, SubIncome>(subIncKey, nyc));
 	}
 }
 
@@ -139,8 +159,8 @@ void FileHandling::readSandyDamagePredictorFileNYC()
 
 		//_newYorkSandyDamage.push_back(nyc);
 
-		int damageKey = 10*nyc.inIncome + nyc.inBoro;
-		_newYorkSandyDamageMap.insert(std::pair<int, SandyDamage>(damageKey, nyc));
+		unsigned short int damageKey = 10*nyc.inIncome + nyc.inBoro;
+		newYorkSandyDamageMap.insert(std::pair<unsigned short int, SandyDamage>(damageKey, nyc));
 	}
 }
 
@@ -159,7 +179,7 @@ void FileHandling::readSandyFinancialLossFileNYC()
 		ifs >> nyc.maxLossAmnt;
 
 		//_newYorkSandyFinLoss.push_back(nyc);
-		_newYorkSandyFinLossMap.insert(std::pair<int, SandyFinancialLoss>(nyc.inBorough, nyc));
+		newYorkSandyFinLossMap.insert(std::pair<unsigned short int, SandyFinancialLoss>(nyc.inBorough, nyc));
 	}
 }
 
@@ -170,18 +190,47 @@ void FileHandling::readSandyPTSDFileNYC()
 
 	while(!ifs.eof())
 	{
-		SandyPTSD nyc;
+		SandyPTSDstatus nyc;
 		ifs >> nyc.pSandyPTSD;
 		ifs >> nyc.inIncomeLoss;
-		ifs >> nyc.inLeftHome;
+		ifs >> nyc.inGender;
+		ifs >> nyc.inAgeCat;
+		//ifs >> nyc.inLeftHome;
 		ifs >> nyc.inPTSDstatus;
-		ifs >> nyc.inPTSDx;
 
 		//_newYorkSandyPTSD.push_back(nyc);
-		int keyPTSD = 10*nyc.inIncomeLoss + nyc.inLeftHome;
-		_newYorkSandyPTSDMap.insert(std::pair<int, SandyPTSD>(keyPTSD, nyc));
+		//unsigned short int keyPTSD = 10*nyc.inIncomeLoss + nyc.inLeftHome;
+		unsigned short int keyPTSD = 100*nyc.inIncomeLoss + 10*nyc.inGender + nyc.inAgeCat;
+		newYorkSandyPTSDMap.insert(std::pair<unsigned short int, SandyPTSDstatus>(keyPTSD, nyc));
 	}
 
+	std::string file7 = "input\\PTSD\\sandyPTSDsymp.txt";
+	std::ifstream ifs1(file7.c_str(), std::ios::in);
+
+	while(!ifs1.eof())
+	{
+		SandyPTSDx nyc;
+		ifs1 >> nyc.keyPTSDx;
+		ifs1 >> nyc.inPTSDx;
+
+		newYorkSandyPTSDsympMap.insert(std::pair<unsigned short int, float>(nyc.keyPTSDx, nyc.inPTSDx));
+	}
+
+}
+
+void FileHandling::readSandyFinancialReimbursementFileNYC()
+{
+	std::string file8 = "input\\sandyFinancialReimbursement\\sandyReimbursement.txt";
+	std::ifstream ifs(file8.c_str(), std::ios::in);
+
+	while(!ifs.eof())
+	{
+		SandyFinancialReimbursement nyc;
+		ifs >> nyc.pReimbursement;
+		ifs >> nyc.inBorough;
+
+		newYorkSandyFinReimburseMap.insert(std::pair<unsigned short int, float>(nyc.inBorough, nyc.pReimbursement));
+	}
 }
 
 
