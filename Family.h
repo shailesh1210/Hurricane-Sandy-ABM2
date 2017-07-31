@@ -11,7 +11,7 @@ class FileHandling;
 class Family
 {
 public:
-	Family(int index);
+	Family(unsigned int index);
 	virtual ~Family();
 	
 	void setFamilyAttributes(Agent a);
@@ -23,20 +23,20 @@ public:
 	
 	void predictSandyDamage(FileHandling *file);
 
-	int getFamilyID() const;
-	int getFamilyKey() const;
-	int getFamilyRace() const;
+	unsigned int getFamilyID() const;
+	unsigned short int getFamilyKey() const;
+	unsigned short int getFamilyRace() const;
 	int getFamilyIncome() const;
-	int getFamilyBorough() const;
-	int getFamilySize() const;
-	int getHouseDamage() const;
-	int getFinancialLossType() const;
+	unsigned short int getFamilyBorough() const;
+	unsigned short int getFamilySize() const;
+	unsigned short int getHouseDamage() const;
+	unsigned short int getFinancialLossType() const;
 	int getFinancialLossAmnt() const;
 	float getAvgFamilyIncome() const;
 	float getAvgFamilySaving() const;
 	float getAvgEmploymentDuration() const;
 
-	AgentList _agentFamList;
+	AgentList agentFamList;
 
 protected:
 	void setDummyVariables();
@@ -49,37 +49,36 @@ protected:
 	void predictEconomicLoss(FileHandling *file);
 
 	//method to predict whether agent left home or not due to damage caused by Hurricane Sandy
-	int predictEvacuation(Agent a);
-	int predictPTSDstatus(FileHandling *file, int leftHome, double &PTSDx, int &incDecline);
+	unsigned short int predictEvacuation(unsigned short int ageCat);
+	unsigned short int predictPTSDstatus(FileHandling *file, unsigned short int ageCat, unsigned short int gender, unsigned short int leftHome, float &PTSDx, unsigned short int &incDecline);
 	
-
-	double uniformRealDist();
+	float uniformRealDist();
 	int randomFinancialLossGenerator(int min, int max);
 
 protected:
 
-	int familyID;
-	int familyKey;
+	unsigned int familyID;
+	unsigned short int familyKey;
 
 	//variables to indicate the damages and losses suffered by families
-	int houseDamage; //1-No damage 2-Moderate damage 3-Severe damage
-	int electricLoss; // 1-Electric Loss 0 - No electric loss
-	int heatLoss; // 1- Heat Loss 0- No heat loss
-	int waterLoss; // 1-Water loss 0-No water loss
+	unsigned short int houseDamage; //1-No damage 2-Moderate damage 3-Severe damage
+	unsigned short int electricLoss; // 1-Electric Loss 0 - No electric loss
+	unsigned short int heatLoss; // 1- Heat Loss 0- No heat loss
+	unsigned short int waterLoss; // 1-Water loss 0-No water loss
 	//int financialLoss; // 1-income loss 0-No income loss
-	int financialLossType; //1-Loss in the range of 0-10K; 2-Loss in the range of 10K-25K; 3-Loss more than 25K 
+	unsigned short int financialLossType; //1-Loss in the range of 0-10K; 2-Loss in the range of 10K-25K; 3-Loss more than 25K 
 	int financialLossAmnt;
 
-	int familyRace;
+	unsigned short int familyRace;
 	int familyIncome;
-	int familyBorough;
-	int familySize;
+	unsigned short int familyBorough;
+	unsigned short int familySize;
 	float avgFamilyIncome;
 	float avgEmploymentDuration;
 	float avgIncomeSaved;
 
-	int bronx, brooklyn, manhattan, queens, staten; //dummy variables related to boroughs
-	int noDamage, modDamage, severeDamage; //dummy variables related to damage
+	unsigned short int bronx, brooklyn, manhattan, queens, staten; //dummy variables related to boroughs
+	unsigned short int noDamage, modDamage, severeDamage; //dummy variables related to damage
 	
 	
 };
